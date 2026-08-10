@@ -1,3 +1,20 @@
+# Constructing Peace Meaning from UN Speech in the Context of the Palestine-Israel Conflict
+
+This project examines how countries articulate and frame their understanding of peace in United Nations speeches addressing the Palestine-Israel conflict. The analysis focuses on the period from the October 7, 2023 escalation through December 2025, using speech records from the UN Digital Library.
+
+Our analytical framework draws on several interconnected concepts from Johan Galtung’s peace and conflict theory:
+
+- **Triangle of Violence** – distinguishing between direct, structural, and cultural violence.
+- **Negative and Positive Peace** – the absence of direct violence versus the presence of social justice and sustainable institutions.
+- **Dissociative vs. Associative Relations** – categorizing relationships as abiosis (absence of relation), symbiosis (mutually beneficial), or antibiosis (destructive interdependence).
+- **Symmetric/Asymmetric Relations** – derived from Galtung’s structural theory of imperialism, examining power imbalances between parties.
+- **Transcend** – the method of transforming conflicts by bridging contradictory goals into a new, inclusive reality.
+
+To systematically interpret diplomatic language at scale, we annotate the speeches using large language models accessed via OpenRouter.
+
+
+---
+
 # UN Speeches Collector
 
 Collect UN speeches related to the Palestine question from the UN Digital Library.
@@ -281,9 +298,6 @@ All five are Galtung:
 | `imperialism` | symmetric vs asymmetric structure | Galtung 1971, *A Structural Theory of Imperialism* |
 | `transcend` | either/or vs both/and | Galtung 2004, *Transcend and Transform* |
 
-**Citations are from memory and have not been checked against the sources — verify before
-citing them in the thesis.** The construct descriptions are what the model reads; the years are
-for you.
 
 That shared origin has a consequence the analysis has to handle. `violence` and
 `positive_negative` are not independent measurements: in Galtung 1969 negative peace *is* the
