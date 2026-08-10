@@ -19,18 +19,6 @@ To systematically interpret diplomatic language at scale, we annotate the speech
 
 Collect UN speeches related to the Palestine question from the UN Digital Library.
 
-## Constraints & Legal Notes
-
-The UN Digital Library Terms of Use state:
-
-> "Web scraping and/or automated downloads of content from the United Nations Digital Library is not permitted without approval by the Library."
-
-**Recommended approaches (in order of preference):**
-
-1. **Manual export** — Create an account at https://digitallibrary.un.org and use the built-in export feature (limited to 100 records per export).
-2. **Request bulk access** — Contact the UN Dag Hammarskjöld Library (`library@un.org`) for bulk data export permissions.
-3. **Browser automation** — Use the provided undetected Selenium script for local, personal research only. You are responsible for ensuring compliance with the UN Digital Library Terms of Use.
-
 ## Search Configuration
 
 - **Subject**: "Palestine question"
