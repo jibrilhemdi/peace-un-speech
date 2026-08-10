@@ -1,0 +1,424 @@
+# Pipeline configuration. Every knob the annotation pipeline reads lives here.
+#
+# The API key is NOT here and never will be. It is read from the OPENROUTER_API_KEY
+# environment variable only, and is never written to the DB, the logs, or an export.
+
+# Every path is relative to the repo root. data/ is layered by provenance: raw/ is what came
+# off the web and can never be regenerated, interim/ and exports/ are both reproducible from
+# the layer above them, and db/ is the one thing that costs days of quota to rebuild.
+paths:
+  # raw — collected from the UN Digital Library. Nothing in the pipeline writes here except
+  # the collector itself, and nothing here is derivable from anything else.
+  pdfs: data/raw/pdfs
+  catalogue: data/raw/un_speeches_palestine.csv
+  collection_checkpoint: data/raw/collection_checkpoint.json
+
+  # interim — reproducible from raw/ by extract_speeches.py and segment.py
+  corpus: data/interim/un_speeches_extracted.csv
+  units: data/interim/units.parquet
+
+  # the job store. Expensive to rebuild; back it up separately.
+  db: data/db/annotations.db
+
+  # analysis-ready outputs, written by export.py. One subdirectory per file format —
+  # parquet/ is canonical, csv/ and excel/ are the same tables in openable form.
+  exports: data/exports
+
+  # pilot adjudication sheets, one per codebook run (annotate.py --pilot)
+  pilots: data/pilots
+
+  # gold sample draws, for human coding (draw_gold_sample.py)
+  gold: data/gold
+
+  codebooks: codebooks
+
+
+# --------------------------------------------------------------------------------------
+# Which rows enter the pipeline
+# --------------------------------------------------------------------------------------
+corpus:
+  # Row-level filter. Column -> required value. All must hold.
+  include_when:
+    is_procedural: false
+
+  # Roles to drop after the filter above. Empty list keeps everything that passed.
+  #   representative     1951 rows
+  #   president           134 rows (non-procedural; national statements + unflagged residue)
+  #   official/briefer    163 rows (UN officials — country is null)
+  # Currently all three are kept, per `is_procedural == False` as specified. Add
+  # "official/briefer" here to drop the ~163 country-less briefer speeches and save ~8% of
+  # the quota per codebook.
+  exclude_roles: []
+
+  # Parties to the conflict, invited under rules 37/39 rather than sitting as Council
+  # members. Flagged with `is_party` in units.parquet so they can be included or excluded at
+  # analysis time without re-running annotation.
+  party_countries:
+    - Israel
+    - Palestine
+
+  # Column names in the corpus CSV.
+  columns:
+    text: speech
+    country: country
+    speaker: ambassador_name
+    role: role
+    language: language
+    date: meeting_date
+    doc_symbol: doc_symbol
+    meeting_number: meeting_number
+    turn_index: turn_index
+  date_format: "%d %B %Y"
+
+
+# --------------------------------------------------------------------------------------
+# Segmentation
+# --------------------------------------------------------------------------------------
+segmentation:
+  # Blank-line paragraph split.
+  paragraph_split: '\n\s*\n'
+
+  # Paragraphs shorter than this are dropped entirely (not merely flagged). At 15 words this
+  # keeps 96.8% of paragraphs in the representative subset.
+  min_words: 15
+
+  # Whitespace/quote normalisation applied before hashing the unit ID. Changing any of this
+  # changes every unit_id, so segment.py will refuse to overwrite without --allow-id-change.
+  normalise:
+    collapse_whitespace: true
+    normalise_quotes: true      # curly -> straight, before hashing only
+    strip: true
+
+  unit_id_length: 16            # hex chars kept from the sha256
+
+  # Paragraph-level procedural detection. The row-level `is_procedural` flag only fires when
+  # a whole turn is housekeeping; these rules catch procedural paragraphs embedded inside
+  # substantive speeches. Paragraphs are MARKED (para_is_procedural), never deleted, so the
+  # rules can be audited and tuned against data/interim/units.parquet.
+  #
+  # Ported from scripts/collect/extract_speech_turns.py, where the same ruleset produced the row-level
+  # flag. Keeping them identical means the two levels agree.
+  #
+  # Each rule:
+  #   name      identifier, reported in segment.py's rule-hit table
+  #   pattern   regex; anchored with ^ where it should match only at paragraph start
+  #   mode      match (default, anchors at start) | search
+  #   flags     any of IGNORECASE, VERBOSE, DOTALL, MULTILINE  (default [IGNORECASE])
+  #   require   optional second regex that must also be found for the rule to fire
+  #   max_words optional word-count ceiling above which the rule does not fire
+  #   kind      optional special rule; currently only `inherit_previous_quote`
+  procedural_rules:
+
+    - name: chair_housekeeping
+      mode: match
+      flags: [IGNORECASE, VERBOSE]
+      pattern: |
+        ^(?:
+          I\s(?:now\s|shall\snow\s|shall\sfirst\s|will\snow\s|should\snow\s|then\s|once\sagain\s|
+              again\s|warmly\s)*(?:give|call\son|invite|welcome)\b
+        | I\s(?:now\s)?(?:give|call)\sthe\sfloor\b
+        | I\sshall\s(?:now|first)\s(?:give|call)\b
+        | I\stake\snote\sof\sthe\sstatement\b
+        | I\sam\sgrateful\b[^.]{0,80}\binterpreters\b
+        | The\s(?:presidency|President)\sof\sthe\sSecurity\sCouncil\b[^.]{0,80}\bfloor\b
+        | We\sare\spresiding\sover\sthe\sCouncil\b
+        | The\s(?:Security\sCouncil|General\sAssembly)\swill\snow\s
+              (?:begin|proceed|take|resume|consider|hear|vote)\b
+        | The\sGeneral\sAssembly\shas\sthus\sconcluded\b
+        | In\saccordance\swith\s(?:rule|the\sunderstanding|Article)\b
+        | (?:Under\s)?Rule\s\d+\sof\sthe\s(?:Council|Assembly)
+        | (?:There\sbeing|In\sthe\sabsence\sof)\sno\sobjection\b
+        | If\sI\shear\sno\sobjection\b
+        | It\sis\sso\sdecided\b
+        | I\spropose\sthat\s(?:the\s(?:Council|Assembly)\sinvite|we\smove\son)\b
+        | I\s(?:now\s)?resume\smy\sfunctions\sas\s(?:the\s)?President\b
+        | The\s(?:representative|Permanent\s(?:Observer|Representative)|Minister|Observer)\b
+              [^.]{0,140}?\b(?:asked\sfor\sthe\sfloor|has\ssubmitted)\b
+        | There\s(?:are|is|appear\sto\sbe)\s(?:no\smore|still|\d+)\b
+              [^.]{0,60}\b(?:names\sinscribed|speakers)\b
+        | The\snext\sspeaker\b
+        | Members\sof\sthe\s(?:Council|Assembly)\shave\sbefore\sthem\b
+        | (?:It\sis\smy\sunderstanding\sthat\s)?The?\s?(?:Council|Assembly)\sis\sready\sto\sproceed\b
+        | It\sis\smy\sunderstanding\sthat\sthe\s(?:Council|Assembly)\sis\sready\b
+        | I\sshall\s(?:now\s|first\s)?put\b
+        | Accordingly,\sI\sintend\sto\sput\b
+        | I\sintend,\swith\sthe\sconcurrence\b
+        | In\sview\sof\sthe\srequest\smade\b[^.]{0,120}\bput\b
+        | (?:The\sprovisional\sagenda|The\s(?:draft\s)?resolution|The\s(?:proposed\s)?
+              (?:oral\s)?amendment)\s(?:received|was\s(?:adopted|not\sadopted)|
+              has\s(?:been\s)?(?:adopted|not\sbeen\sadopted))\b
+        | I\s(?:would\slike\sto|wish\sto|should\slike\sto)\s
+              (?:remind|inform|request|encourage|draw\sthe\sattention|take\sthis\sopportunity)\b
+        | (?:May\sI|Before\s(?:giving\sthe\sfloor|continuing|we\s(?:begin|proceed)|I\sadjourn))\b
+        | May\sI\stake\sit\sthat\b
+        | On\sbehalf\sof\sthe\s(?:Council|Assembly),\sI\s
+              (?:wish|should\slike|thank|congratulate|welcome)\b
+        | We\shave\sheard\sthe\s(?:last|final)\sspeaker\b
+        | We\sshall\s(?:hear|now\sproceed|now\sturn|now\sconsider)\b
+        | I\s(?:shall|will)\snow\smake\sa\sstatement\sin\smy\scapacity\b
+        | The\smeeting\s(?:is|stands)\s(?:adjourned|suspended)\b
+        | I\snow\sinvite\b
+        | The\sPermanent\sObserver\sof\sthe\sObserver\sState\b
+        | I\sreiterate\sto\sall\sparticipating\sdelegations\b
+        | In\sorder\sto\sensure\sthat\sall\sspeakers\b
+        | Allow\sme\sto\sexpress\smy\ssincere\sthanks\sto\sthe\sinterpreters\b
+        | Did\syou\sfinish\syour\sstatement\b
+        )
+
+    # Courtesy thanks for a briefing, e.g. "I thank Mr. Wennesland for his briefing."
+    # Procedural only when that is the whole paragraph, not an opening courtesy followed by
+    # an actual statement — hence max_words.
+    - name: courtesy_thanks
+      mode: match
+      max_words: 60
+      pattern: '^I\s(?:also\s|now\s|again\s)?(?:thank|wish\sto\sthank|should\slike\sto\sthank|express\smy\s\w+\s(?:appreciation|thanks))\b'
+      require: '\b(briefing|statement|presentation|remarks|clarification|participation|being\shere|Secretary-General|his|her|their)\b'
+
+    # A quoted passage directly after a procedural paragraph inherits it — the text of a rule
+    # of procedure read out by the chair is not a substantive statement.
+    - name: quote_after_procedural
+      kind: inherit_previous_quote
+
+
+# --------------------------------------------------------------------------------------
+# Provider
+# --------------------------------------------------------------------------------------
+provider:
+  base_url: https://openrouter.ai/api/v1
+  # Switched 2026-08-07: inclusionai/ling-3.0-flash:free was withdrawn from the catalogue.
+  # Codebooks violence / relations / imperialism / positive_negative and the first 1,296
+  # speeches of transcend were annotated with the old model. The model used is recorded on
+  # every job row and carried into every export, so runs from the two models stay separable.
+  model: poolside/laguna-s-2.1:free
+
+  # Tried in order when the primary model 5xxs repeatedly or returns 404 (withdrawn/renamed).
+  # Deliberately empty: this model is new and single-provider, and inventing a fallback ID
+  # that does not exist would turn a recoverable outage into a confusing 404 loop. Populate
+  # from the live catalogue before a long run:
+  #     curl -s https://openrouter.ai/api/v1/models | python -c \
+  #       "import json,sys;[print(m['id']) for m in json.load(sys.stdin)['data']]" | grep free
+  # Deliberately empty. poolside/laguna-xs-2.1:free is a *different* model, so falling back
+  # to it would silently mix a third instrument into the data. The paid poolside/laguna-s-2.1
+  # is the same model and would be a safe fallback if you are willing to be billed.
+  fallback_models: []
+
+  temperature: 0
+  seed: 20260727
+
+  # response_format={"type":"json_object"}. Not every model behind OpenRouter supports it —
+  # inclusionai/ling-3.0-flash:free (served by Novita) returns 400 "does not support feature:
+  # structured-outputs" on every request.
+  #   auto  try it once per model; on rejection, record it in the provider_caps table and
+  #         never send it again for that model. Costs one request, ever.
+  #   on    always send it (a model you know supports it)
+  #   off   never send it
+  # The prompt demands bare JSON regardless, and stray markdown fences are stripped, so
+  # turning it off costs nothing but a slightly higher parse_error rate.
+  json_mode: auto
+
+  # Passed straight through to OpenRouter's `reasoning` parameter; omit or leave null to send
+  # nothing. Measured on this model with a 2-paragraph probe:
+  #   (not sent)                474 completion tokens
+  #   {enabled: false}           17 completion tokens
+  #   {effort: low}             410 completion tokens
+  # Reasoning is left ON because tokens are free here and deliberation plausibly helps a
+  # boundary-sensitive coding task. The cost is WALL CLOCK: the pilot ran ~21s/speech against
+  # the ~3.2s the rate limit alone would require, so a 950-request day takes ~5.5h rather than
+  # ~50min. Set `enabled: false` to trade that back if you would rather finish sooner —
+  # but re-run a pilot and compare labels before committing a full pass to it.
+  reasoning: null
+  # The pilot showed this model spends ~95% of its completion budget on reasoning tokens
+  # before emitting the JSON: a 7-paragraph speech billed 8,187 completion tokens for 422
+  # tokens of actual output, and two speeches were truncated (finish_reason=length) at the
+  # old 8,192 ceiling. The model's stated max output is 32,768, and on a :free model tokens
+  # cost nothing — the binding constraint is requests/day — so give it the full headroom.
+  max_output_tokens: 32768
+  request_timeout_s: 180
+
+  # Optional OpenRouter attribution headers. Harmless to leave as-is.
+  http_referer: "https://github.com/local/un_speeches"
+  x_title: "UN Speeches deductive content analysis"
+
+
+# --------------------------------------------------------------------------------------
+# Rate and quota limits
+# --------------------------------------------------------------------------------------
+limits:
+  requests_per_minute: 20
+  # 60/20 = 3.0s exactly; 3.2 leaves margin for clock skew and burst accounting.
+  min_request_spacing_s: 3.2
+
+  # Requests per UTC day, including failed ones — failures consume quota too. The provider
+  # cap is 1000; 950 leaves headroom for repair attempts and manual pokes.
+  daily_budget: 950
+
+  # Hour (UTC) at which the provider's daily counter resets. Assumed 00:00 UTC but NOT
+  # verified against the provider. If runs stop earlier than expected, check this first.
+  quota_reset_hour_utc: 0
+
+  # Attempts per request before the job is marked api_error. Every attempt costs quota.
+  max_attempts: 3
+  backoff_base_s: 4.0
+  backoff_max_s: 120.0
+  backoff_jitter: 0.3
+
+  # Telling a transient 429 ("slow down") from daily-quota exhaustion ("come back tomorrow")
+  # matters: the first should be retried, the second must stop the run. The exact wording
+  # OpenRouter uses for the free-tier daily limit is not verified here, so it is configurable.
+  # A 429 counts as daily exhaustion when the error body contains any of these markers, OR
+  # when Retry-After / X-RateLimit-Reset points further ahead than the threshold below.
+  daily_quota_markers:
+    - "per day"
+    - "per-day"
+    - "daily limit"
+    - "free-models-per-day"
+    - "daily quota"
+    - "add 10 credits"
+    - "requests per day"
+  daily_quota_retry_after_threshold_s: 600
+
+  # Rough token estimation for --dry-run. Character-based, since the served tokeniser is not
+  # available locally. Expect +/-10% on English prose.
+  chars_per_token: 3.7
+
+
+# --------------------------------------------------------------------------------------
+# Pilot
+# --------------------------------------------------------------------------------------
+pilot:
+  # Speeches are stratified on (bloc x length tercile) and sampled proportionally.
+  length_strata: 3
+  # A full corpus pass is refused for a codebook with no completed pilot at the current
+  # version unless --force is passed. A bad prompt costs two days of quota.
+  require_pilot_before_full_run: true
+  min_pilot_speeches: 20
+
+
+# --------------------------------------------------------------------------------------
+# Blocs — UN regional groups
+# --------------------------------------------------------------------------------------
+# Used for pilot stratification and available as a grouping variable in the exports. These
+# are the official UN regional groups, not a substantive political grouping; if the analysis
+# wants OIC / EU / NAM / P5, add another map here and reference it by name.
+#
+# Türkiye is listed in both the Asia-Pacific and Western European groups by the UN; it
+# participates in WEOG and is assigned there. Holy See and Palestine are non-member observer
+# states and belong to no regional group.
+bloc_map_name: un_regional_groups
+bloc_maps:
+  un_regional_groups:
+    Albania: EASTERN_EUROPEAN
+    Algeria: AFRICAN
+    Argentina: GRULAC
+    Armenia: EASTERN_EUROPEAN
+    Australia: WEOG
+    Austria: WEOG
+    Bahrain: ASIA_PACIFIC
+    Bangladesh: ASIA_PACIFIC
+    Belgium: WEOG
+    Bolivia: GRULAC
+    Brazil: GRULAC
+    Brunei Darussalam: ASIA_PACIFIC
+    Cabo Verde: AFRICAN
+    Cambodia: ASIA_PACIFIC
+    Cameroon: AFRICAN
+    Canada: WEOG
+    Chile: GRULAC
+    China: ASIA_PACIFIC
+    Colombia: GRULAC
+    Croatia: EASTERN_EUROPEAN
+    Cuba: GRULAC
+    Czechia: EASTERN_EUROPEAN
+    Denmark: WEOG
+    Ecuador: GRULAC
+    Egypt: AFRICAN
+    Finland: WEOG
+    France: WEOG
+    Gabon: AFRICAN
+    Germany: WEOG
+    Ghana: AFRICAN
+    Greece: WEOG
+    Guatemala: GRULAC
+    Guyana: GRULAC
+    Holy See: OBSERVER
+    Hungary: EASTERN_EUROPEAN
+    Iceland: WEOG
+    India: ASIA_PACIFIC
+    Indonesia: ASIA_PACIFIC
+    Iran: ASIA_PACIFIC
+    Iraq: ASIA_PACIFIC
+    Ireland: WEOG
+    Israel: WEOG
+    Italy: WEOG
+    Jamaica: GRULAC
+    Japan: ASIA_PACIFIC
+    Jordan: ASIA_PACIFIC
+    Kazakhstan: ASIA_PACIFIC
+    Kuwait: ASIA_PACIFIC
+    Kyrgyzstan: ASIA_PACIFIC
+    "Lao People’s Democratic Republic": ASIA_PACIFIC
+    Lebanon: ASIA_PACIFIC
+    Libya: AFRICAN
+    Liechtenstein: WEOG
+    Luxembourg: WEOG
+    Malaysia: ASIA_PACIFIC
+    Maldives: ASIA_PACIFIC
+    Malta: WEOG
+    Mauritania: AFRICAN
+    Mexico: GRULAC
+    Morocco: AFRICAN
+    Mozambique: AFRICAN
+    Namibia: AFRICAN
+    Netherlands: WEOG
+    New Zealand: WEOG
+    Nicaragua: GRULAC
+    Nigeria: AFRICAN
+    Norway: WEOG
+    Oman: ASIA_PACIFIC
+    Pakistan: ASIA_PACIFIC
+    Palestine: OBSERVER
+    Panama: GRULAC
+    Peru: GRULAC
+    Philippines: ASIA_PACIFIC
+    Poland: EASTERN_EUROPEAN
+    Portugal: WEOG
+    Qatar: ASIA_PACIFIC
+    Republic of Korea: ASIA_PACIFIC
+    Romania: EASTERN_EUROPEAN
+    Russian Federation: EASTERN_EUROPEAN
+    Saint Lucia: GRULAC
+    Saudi Arabia: ASIA_PACIFIC
+    Senegal: AFRICAN
+    Serbia: EASTERN_EUROPEAN
+    Sierra Leone: AFRICAN
+    Slovenia: EASTERN_EUROPEAN
+    Somalia: AFRICAN
+    South Africa: AFRICAN
+    Spain: WEOG
+    Sri Lanka: ASIA_PACIFIC
+    Switzerland: WEOG
+    Syrian Arab Republic: ASIA_PACIFIC
+    Thailand: ASIA_PACIFIC
+    Timor-Leste: ASIA_PACIFIC
+    Trinidad and Tobago: GRULAC
+    Tunisia: AFRICAN
+    "T\xFCrkiye": WEOG
+    Uganda: AFRICAN
+    Ukraine: EASTERN_EUROPEAN
+    United Arab Emirates: ASIA_PACIFIC
+    United Kingdom: WEOG
+    United States: WEOG
+    Venezuela: GRULAC
+    Viet Nam: ASIA_PACIFIC
+    Yemen: ASIA_PACIFIC
+
+
+# --------------------------------------------------------------------------------------
+# Export
+# --------------------------------------------------------------------------------------
+export:
+  # Country profiles denominator: paragraphs that are non-procedural at BOTH levels.
+  exclude_procedural_paragraphs: true
+  # Countries with fewer than this many annotated paragraphs get a `sparse` flag in
+  # country_profiles.parquet. Not dropped — flagged, so the choice stays yours.
+  sparse_country_min_units: 30

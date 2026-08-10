@@ -1,0 +1,71 @@
+country,iso3,ward_cluster,louvain_community
+Albania,ALB,2,0
+Algeria,DZA,1,1
+Argentina,ARG,2,2
+Bahrain,BHR,2,2
+Bangladesh,BGD,1,4
+Belgium,BEL,2,3
+Brazil,BRA,2,0
+Chile,CHL,2,3
+China,CHN,1,1
+Colombia,COL,2,0
+Cuba,CUB,1,1
+Denmark,DNK,2,3
+Ecuador,ECU,2,2
+Egypt,EGY,1,1
+France,FRA,2,3
+Gabon,GAB,2,2
+Ghana,GHA,2,0
+Greece,GRC,2,3
+Guyana,GUY,1,1
+India,IND,2,2
+Indonesia,IDN,1,4
+Iran,IRN,1,1
+Iraq,IRQ,1,1
+Ireland,IRL,2,3
+Japan,JPN,2,0
+Jordan,JOR,1,1
+Kazakhstan,KAZ,2,2
+Kuwait,KWT,1,1
+Lebanon,LBN,1,1
+Libya,LBY,1,1
+Liechtenstein,LIE,2,0
+Malaysia,MYS,1,1
+Maldives,MDV,1,4
+Malta,MLT,2,3
+Mauritania,MRT,1,1
+Mexico,MEX,2,2
+Morocco,MAR,2,0
+Mozambique,MOZ,2,0
+Namibia,NAM,2,0
+New Zealand,NZL,2,2
+Norway,NOR,2,0
+Oman,OMN,1,4
+Pakistan,PAK,1,4
+Panama,PAN,2,0
+Peru,PER,2,2
+Philippines,PHL,2,2
+Poland,POL,2,2
+Portugal,PRT,2,3
+Qatar,QAT,1,4
+Republic of Korea,KOR,2,3
+Russian Federation,RUS,1,1
+Saudi Arabia,SAU,1,1
+Sierra Leone,SLE,2,2
+Slovenia,SVN,2,0
+Somalia,SOM,1,4
+South Africa,ZAF,1,1
+Spain,ESP,2,2
+Sri Lanka,LKA,2,2
+Switzerland,CHE,2,0
+Syrian Arab Republic,SYR,1,1
+Thailand,THA,2,2
+Tunisia,TUN,1,1
+Türkiye,TUR,1,1
+Uganda,UGA,1,1
+United Arab Emirates,ARE,2,3
+United Kingdom,GBR,2,3
+United States,USA,2,3
+Venezuela,VEN,1,1
+Viet Nam,VNM,2,2
+Yemen,YEM,1,1

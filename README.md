@@ -452,4 +452,3 @@ Writes `data/gold/gold_sample.parquet` with a `pi` column (exact inclusion proba
 model's own predicted labels is legitimate **because** pi is recorded at draw time; a later
 measurement-error correction needs those probabilities known by design, not reconstructed. The
 human-coding UI is out of scope.
-# peace-un-speech

@@ -1,0 +1,77 @@
+country,iso3,pooled_cluster,P1_war_onset,P1_war_onset__n,P2_post_icj,P2_post_icj__n,P3-P5_ceasefire_1_to_ceasefire_2,P3-P5_ceasefire_1_to_ceasefire_2__n,n_phases_present,is_mover
+Albania,ALB,2.0,2.0,98,,0,,0,1,False
+Algeria,DZA,1.0,1.0,48,1.0,381,1.0,215,3,False
+Argentina,ARG,2.0,2.0,26,,0,,0,1,False
+Bahrain,BHR,2.0,,0,2.0,23,2.0,16,2,False
+Bangladesh,BGD,1.0,1.0,24,1.0,29,1.0,18,3,False
+Belgium,BEL,2.0,2.0,18,2.0,21,,0,2,False
+Bolivia,BOL,,,0,1.0,17,,0,1,False
+Brazil,BRA,2.0,2.0,117,2.0,30,1.0,22,3,True
+Brunei Darussalam,BRN,,,0,,0,1.0,18,1,False
+Cameroon,CMR,,,0,,0,1.0,26,1,False
+Chile,CHL,2.0,2.0,20,2.0,41,2.0,33,3,False
+China,CHN,1.0,1.0,150,2.0,276,2.0,136,3,True
+Colombia,COL,2.0,2.0,18,2.0,16,,0,2,False
+Cuba,CUB,1.0,1.0,38,1.0,25,1.0,21,3,False
+Denmark,DNK,2.0,,0,2.0,17,2.0,180,2,False
+Ecuador,ECU,2.0,2.0,92,2.0,231,,0,2,False
+Egypt,EGY,1.0,1.0,77,1.0,94,1.0,59,3,False
+France,FRA,2.0,2.0,110,2.0,247,2.0,177,3,False
+Gabon,GAB,2.0,2.0,91,,0,,0,1,False
+Germany,DEU,,2.0,16,,0,,0,1,False
+Ghana,GHA,2.0,2.0,93,,0,,0,1,False
+Greece,GRC,2.0,,0,,0,2.0,181,1,False
+Guyana,GUY,1.0,2.0,31,1.0,374,1.0,196,3,True
+Iceland,ISL,,,0,,0,2.0,16,1,False
+India,IND,2.0,2.0,17,2.0,24,,0,2,False
+Indonesia,IDN,1.0,1.0,37,1.0,17,,0,2,False
+Iran,IRN,1.0,1.0,18,1.0,133,1.0,35,3,False
+Iraq,IRQ,1.0,1.0,28,1.0,75,1.0,24,3,False
+Ireland,IRL,2.0,,0,2.0,33,2.0,27,2,False
+Japan,JPN,2.0,2.0,92,2.0,243,2.0,23,3,False
+Jordan,JOR,1.0,1.0,35,1.0,71,1.0,61,3,False
+Kazakhstan,KAZ,2.0,,0,,0,2.0,18,1,False
+Kuwait,KWT,1.0,1.0,33,1.0,37,1.0,59,3,False
+Lebanon,LBN,1.0,2.0,43,1.0,132,1.0,19,3,True
+Libya,LBY,1.0,1.0,41,1.0,18,1.0,25,3,False
+Liechtenstein,LIE,2.0,,0,2.0,23,,0,1,False
+Luxembourg,LUX,,,0,2.0,17,,0,1,False
+Malaysia,MYS,1.0,1.0,52,1.0,25,1.0,20,3,False
+Maldives,MDV,1.0,1.0,25,1.0,20,2.0,20,3,True
+Malta,MLT,2.0,2.0,124,2.0,314,,0,2,False
+Mauritania,MRT,1.0,1.0,21,1.0,50,,0,2,False
+Mexico,MEX,2.0,2.0,34,2.0,20,2.0,22,3,False
+Morocco,MAR,2.0,2.0,28,2.0,27,2.0,26,3,False
+Mozambique,MOZ,2.0,2.0,97,2.0,263,,0,2,False
+Namibia,NAM,2.0,1.0,16,,0,,0,1,False
+Nicaragua,NIC,,,0,1.0,16,,0,1,False
+Norway,NOR,2.0,2.0,34,2.0,36,2.0,26,3,False
+Oman,OMN,1.0,1.0,25,1.0,20,,0,2,False
+Pakistan,PAK,1.0,1.0,34,1.0,49,1.0,261,3,False
+Panama,PAN,2.0,,0,,0,2.0,197,1,False
+Peru,PER,2.0,,0,2.0,20,,0,1,False
+Philippines,PHL,2.0,2.0,27,2.0,26,2.0,18,3,False
+Poland,POL,2.0,,0,2.0,25,2.0,16,2,False
+Portugal,PRT,2.0,,0,2.0,23,2.0,24,2,False
+Qatar,QAT,1.0,1.0,52,1.0,47,1.0,42,3,False
+Republic of Korea,KOR,2.0,2.0,16,2.0,280,2.0,168,3,False
+Russian Federation,RUS,1.0,1.0,260,1.0,553,1.0,261,3,False
+Saudi Arabia,SAU,1.0,2.0,34,1.0,57,1.0,25,3,True
+Sierra Leone,SLE,2.0,2.0,28,2.0,469,2.0,261,3,False
+Slovenia,SVN,2.0,2.0,35,2.0,335,2.0,191,3,False
+Somalia,SOM,1.0,,0,,0,1.0,199,1,False
+South Africa,ZAF,1.0,1.0,39,1.0,67,1.0,25,3,False
+Spain,ESP,2.0,2.0,22,2.0,21,2.0,27,3,False
+Sri Lanka,LKA,2.0,2.0,21,2.0,15,,0,2,False
+Switzerland,CHE,2.0,2.0,112,2.0,329,2.0,17,3,False
+Syrian Arab Republic,SYR,1.0,1.0,36,1.0,108,1.0,29,3,False
+Thailand,THA,2.0,,0,2.0,19,,0,1,False
+Timor-Leste,TLS,,,0,,0,2.0,19,1,False
+Tunisia,TUN,1.0,1.0,35,1.0,35,,0,2,False
+Türkiye,TUR,1.0,1.0,29,1.0,51,1.0,64,3,False
+Uganda,UGA,1.0,,0,1.0,52,1.0,39,2,False
+United Arab Emirates,ARE,2.0,2.0,165,2.0,55,1.0,30,3,True
+United Kingdom,GBR,2.0,2.0,94,2.0,246,2.0,135,3,False
+United States,USA,2.0,2.0,199,2.0,434,2.0,230,3,False
+Venezuela,VEN,1.0,1.0,24,1.0,35,1.0,36,3,False
+Viet Nam,VNM,2.0,2.0,15,2.0,19,2.0,22,3,False

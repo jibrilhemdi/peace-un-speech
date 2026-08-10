@@ -1,0 +1,5 @@
+Variant,Countries,Shared with main,ARI vs main,Same partition,Verdict,description
+(a) confidence >= 0.70,70,70,1.0,1.0,typology holds,annotations with confidence >= 0.7 (51773 of 52043; 151 rows have no confidence and are dropped)
+(b) evidence verified only,70,70,1.0,1.0,typology holds,annotations whose evidence span verified against the paragraph (51051 of 52043)
+(c) transcend single-model span,70,70,0.9428517045717607,0.9857142857142858,typology holds,"transcend annotations restricted to the ling-3.0-flash:free span (2023-08-21..2024-09-04); all other dimensions unchanged, so the country set is preserved"
+(d) drop duplicated attribution absence,70,70,0.9428342951003912,0.9857142857142858,typology holds,"attribution's synthetic absence column removed; it is identical to violence_type's in every paragraph because attribution is conditional_on violence_type, so keeping both double-weights that single feature in the Euclidean distance"

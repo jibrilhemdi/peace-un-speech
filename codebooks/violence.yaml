@@ -1,0 +1,271 @@
+# One of five codebooks, all drawn from Galtung: the violence triangle (violence),
+# negative/positive peace (positive_negative), dissociative vs associative relations
+# (relations), the structural theory of imperialism (imperialism), and the TRANSCEND
+# method (transcend). They are facets of one framework, not independent instruments —
+# see the note on theoretical coupling in README.md before treating them as separate
+# indicators in an MCA or latent class model.
+#
+# Converted from codebooks/violance.csv on 2026-07-27.
+#
+# The CSV held six flat codes (VD/VS/VC × ATR-ISR/ATR-PAL). They are split here into two
+# independent dimensions, because they measure different things: violence_type is the
+# *conception of peace*, attribution is *blame*. See SCHEMA.md §1.
+#
+# Definitions, examples and reasoning are carried over verbatim from the CSV. The only edits
+# are country names in `source`, normalised to the corpus spelling (Rusia -> Russian
+# Federation, Palestina -> Palestine, AS -> United States, UEA -> United Arab Emirates).
+#
+# Provenance note: S/PV.10146, S/PV.10046 and S/PV.9945 are NOT in data/ (the corpus runs
+# S/PV.9400-10007). Those spans could not be verified against the corpus. The remaining
+# examples were confirmed to appear verbatim. Marked below with `# unverified`.
+
+id: violence
+version: 1
+title: Violence and the conception of peace
+theory: >
+  Galtung (1969, 1990), Theory of Violence: peace is defined by the form of violence its
+  absence is measured against. Direct violence implies negative peace (absence of physical
+  harm); structural violence implies positive peace (absence of institutionalised
+  deprivation); cultural violence implies the delegitimation of the symbolic order that makes
+  the other two appear acceptable.
+unit: paragraph
+allow_multiple_annotations: true
+max_annotations_per_unit: 6
+
+instructions: >
+  Code the speaker's own framing, not the underlying facts. If a speaker reports another
+  party's claim without endorsing it, that is not an annotation. Code what the speaker asserts
+  as their own position.
+
+  Most paragraphs of a Security Council speech are procedural, ceremonial, or purely
+  hortatory, and correctly receive no annotation at all.
+
+
+# --------------------------------------------------------------------------------------
+# Examples are defined once here and aliased into both dimensions below, since every span is
+# simultaneously evidence of a violence type and of an attribution. Editing an entry here
+# updates both places. See SCHEMA.md §4.1. Keys starting with "_" are ignored by the loader.
+# --------------------------------------------------------------------------------------
+_examples:
+
+  vd_isr_1: &vd_isr_1
+    text: >-
+      condemning indiscriminate attacks on the civilian population and civilian objects in the
+      Gaza Strip, including yesterday's missile attack on the Al Ahli Hospital, .
+    source: "S/PV.9442, Nebenzia (Russian Federation)"
+    annotation: {violence_type: VD, attribution: ATR-ISR}
+    reasoning: >-
+      Refers to direct physical action explicitly aimed at Israeli military operations. And
+      sees Israel as the cause.
+
+  vd_isr_2: &vd_isr_2
+    text: "They spoke of inflicting death and destruction on all of Gaza and they did so."
+    source: "S/PV.9963, Mansour (Palestine)"
+    annotation: {violence_type: VD, attribution: ATR-ISR}
+    reasoning: >-
+      Refers to direct physical action explicitly aimed at Israeli military operations. And
+      sees Israel as the cause.
+
+  vd_pal_1: &vd_pal_1
+    text: "...fighting a war that was forced upon us... since 7 October 2023..."
+    source: "S/PV.10146, Danon (Israel)"   # unverified — meeting not in data/
+    annotation: {violence_type: VD, attribution: ATR-PAL}
+    reasoning: >-
+      Highlighting direct physical attacks (October 7, sexual violence) carried out by
+      Palestinian/Hamas actors against Israeli citizens.
+
+  vd_pal_2: &vd_pal_2
+    text: "...sexual violence by Hamas terrorists, blackmail for aid or money..."
+    source: "S/PV.10146, Danon (Israel)"   # unverified — meeting not in data/
+    annotation: {violence_type: VD, attribution: ATR-PAL}
+    reasoning: >-
+      Highlighting direct physical attacks (October 7, sexual violence) carried out by
+      Palestinian/Hamas actors against Israeli citizens.
+
+  vs_isr_1: &vs_isr_1
+    text: "...strongly condemning the blockade."
+    source: "S/PV.9442, Nebenzia (Russian Federation)"
+    annotation: {violence_type: VS, attribution: ATR-ISR}
+    reasoning: >-
+      Focus on the system of restrictions (blockades), annexation, and occupation that
+      systematically and massively deprive people of their rights.
+
+  vs_isr_2: &vs_isr_2
+    text: "It clearly affirms — no annexation, no occupation, no forced displacement."
+    source: "S/PV.10046, Bendjama (Algeria)"   # unverified — meeting not in data/
+    annotation: {violence_type: VS, attribution: ATR-ISR}
+    reasoning: >-
+      Focus on the system of restrictions (blockades), annexation, and occupation that
+      systematically and massively deprive people of their rights.
+
+  vs_pal_1: &vs_pal_1
+    text: >-
+      ...blackmail for aid or money and abuse by those in positions of power. ... life looks
+      like under Hamas.
+    source: "S/PV.10146, Danon (Israel)"   # unverified — meeting not in data/
+    annotation: {violence_type: VS, attribution: ATR-PAL}
+    reasoning: >-
+      Describes Hamas' power structure that exploits civilian populations, extorts aid, and
+      monopolizes data institutions.
+
+  vc_isr_1: &vc_isr_1
+    text: >-
+      West Jerusalem has been systematically constructing and imposing a distorted narrative,
+      in which Palestinians are second-class people...
+    source: "S/PV.10003, Nebenzia (Russian Federation)"
+    annotation: {violence_type: VC, attribution: ATR-ISR}
+    reasoning: >-
+      Highlighting the production of narratives (distorted narratives, describing as monsters)
+      which function to delegitimize the existence of other parties.
+
+  vc_isr_2: &vc_isr_2
+    text: >-
+      Our children are being described as monsters by the monsters who are killing them...
+    source: "S/PV.9945, Bamya (Palestine)"   # unverified — meeting not in data/
+    annotation: {violence_type: VC, attribution: ATR-ISR}
+    reasoning: >-
+      Highlighting the production of narratives (distorted narratives, describing as monsters)
+      which function to delegitimize the existence of other parties.
+
+  vc_pal_1: &vc_pal_1
+    text: >-
+      ...enough of the endless defamation campaign against the State of Israel... trying to
+      smear Israel...
+    source: "S/PV.9963, Danon (Israel)"
+    annotation: {violence_type: VC, attribution: ATR-PAL}
+    reasoning: >-
+      Attribution to the production of narratives (VC) in which suffering is exploited for
+      propaganda machines and defamation campaigns.
+
+
+dimensions:
+
+  # ------------------------------------------------------------------------------------
+  - name: violence_type
+    description: >
+      Which Galtungian form of violence the speaker invokes. This is the conception of peace:
+      what the speaker treats as the thing whose absence would constitute peace.
+    required: true
+    categories:
+
+      - code: VD
+        label: Direct violence
+        definition: >
+          Direct physical violence — a concrete act causing bodily harm or physical
+          destruction: killing, injury, bombardment, armed attack, hostage-taking, sexual
+          violence. There is an identifiable act, an agent who performs it, and a physical
+          effect.
+        includes:
+          - Named operations, strikes or attacks with a described physical effect
+          - Casualty or destruction figures cited as the consequence of an act
+        excludes:
+          - Generic calls to "end the violence" with no act described
+          - Deprivation caused by policy rather than by an act (that is VS)
+        positive_examples:
+          - *vd_isr_1
+          - *vd_isr_2
+          - *vd_pal_1
+          - *vd_pal_2
+        # TODO: write negative_examples. These suppress over-assignment and are the main
+        # defence against VD firing on diplomatic boilerplate. Start with the "We condemn the
+        # violence and call on all parties to exercise restraint" family.
+        negative_examples: []
+
+      - code: VS
+        label: Structural violence
+        definition: >
+          Violence built into an arrangement rather than performed as an act: blockade, siege,
+          occupation, annexation, closure, restriction of movement, denial of aid, denial of
+          statehood, systematic exploitation. Harm follows from the persistence of the
+          arrangement, not from any single event, and often has no single identifiable
+          perpetrator at the moment of harm.
+        includes:
+          - Named policies, regimes or systems described as depriving a population
+          - Denial of rights, resources or self-determination framed as ongoing
+        excludes:
+          - A single physical act, however severe (that is VD)
+          - The justification offered for the arrangement (that is VC)
+        positive_examples:
+          - *vs_isr_1
+          - *vs_isr_2
+          - *vs_pal_1
+        # TODO: write negative_examples. Watch for VS over-firing on any mention of the word
+        # "occupation" — the noun alone is not a claim that it produces harm.
+        negative_examples: []
+
+      - code: VC
+        label: Cultural violence
+        definition: >
+          The symbolic register that legitimises or masks violence: narratives, media framing,
+          propaganda, dehumanising or delegitimising language, historical or religious
+          justification. The object of the claim is a *representation* — what is said, taught,
+          broadcast or believed — not an act or an arrangement.
+        includes:
+          - Accusations of distorted narrative, incitement, defamation or dehumanisation
+          - Claims that a party's rhetoric makes harm acceptable
+        excludes:
+          - The physical or structural harm the narrative is said to legitimise
+          - Ordinary disagreement about facts with no delegitimation claim
+        positive_examples:
+          - *vc_isr_1
+          - *vc_isr_2
+          - *vc_pal_1
+        # TODO: write negative_examples. VC is the easiest code to over-assign, because almost
+        # every Council speech accuses someone of misrepresentation. Reserve it for claims
+        # about a *system* of representation, not one disputed statement.
+        negative_examples: []
+
+  # ------------------------------------------------------------------------------------
+  - name: attribution
+    description: >
+      Whom the speaker holds responsible for the violence identified above. This is blame, and
+      it is deliberately a separate variable from the conception of peace: two states can
+      share a structural conception and disagree entirely about who is culpable.
+
+      NONE is a substantive answer here, not a failure to decide. A speaker who describes
+      violence while declining to name an agent — "civilians on both sides are dying", "the
+      violence must end" attached to a concrete act, symmetric condemnation of "all parties" —
+      is making a recognisable diplomatic move, and the analysis needs to see it. Assign NONE
+      whenever the paragraph identifies violence but no responsible party. Do not infer the
+      agent from context outside the paragraph.
+    required: false
+    conditional_on: violence_type
+    categories:
+
+      - code: ATR-ISR
+        label: Attributed to Israel
+        definition: >
+          The speaker identifies Israel, the Israeli government, Israeli forces, or Israeli
+          policy as the agent or source of the violence.
+        positive_examples:
+          - *vd_isr_1
+          - *vd_isr_2
+          - *vs_isr_1
+          - *vs_isr_2
+          - *vc_isr_1
+          - *vc_isr_2
+        # TODO: write negative_examples. The key case is symmetric condemnation — "all parties
+        # must cease" — which names Israel among others without attributing to Israel. With
+        # attribution now `required: false`, that case has somewhere to go: NONE.
+        negative_examples: []
+
+      - code: ATR-PAL
+        label: Attributed to Palestinian factions / Hamas
+        definition: >
+          The speaker identifies Hamas, Palestinian Islamic Jihad, Palestinian armed factions,
+          or Palestinian authorities as the agent or source of the violence.
+        positive_examples:
+          - *vd_pal_1
+          - *vd_pal_2
+          - *vs_pal_1
+          - *vc_pal_1
+        # TODO: write negative_examples. Mentioning Hamas is not attributing to Hamas — many
+        # speeches name Hamas while attributing the harm under discussion to Israel.
+        negative_examples: []
+
+
+# TODO: write worked_examples. At minimum one paragraph with `annotations: []`, and one
+# paragraph yielding two annotations. See SCHEMA.md §5 — the empty-list example is the single
+# most effective guard against inflated prevalence, and the validator will warn until it
+# exists.
+worked_examples: []

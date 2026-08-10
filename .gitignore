@@ -1,0 +1,45 @@
+# Secrets — the API key lives in the environment only, never in a tracked file
+.env
+.env.*
+!.env.example
+
+# data/ is layered by provenance and ignored layer by layer. Nothing under data/ is tracked
+# except the README-ish placeholders, because every layer is either too large for git or
+# reproducible from the layer above it.
+
+# raw/ — collected from the UN Digital Library. NOT reproducible, but far too large for git.
+# Back this up somewhere off-repo; re-collecting it means re-scraping.
+data/raw/
+
+# db/ — the job store. Rebuilding it costs days of quota, so back it up separately — but it
+# is far too large and too churny for git.
+data/db/
+
+# interim/ — reproducible from raw/ by extract_speeches.py and segment.py
+data/interim/
+
+# exports/ — reproducible from the DB by export.py and db_to_csv.py
+data/exports/
+
+# pilots/ and gold/ — adjudication sheets. The *filled-in* ones are research data worth
+# keeping; un-negotiate this line if you start committing coded sheets.
+data/pilots/
+data/gold/
+
+# samples/ — small hand-made spot-check extracts
+data/samples/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+~$*
+*.swp
+.idea/
+.vscode/

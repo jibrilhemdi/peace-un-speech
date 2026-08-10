@@ -1,0 +1,149 @@
+# One of five codebooks, all drawn from Galtung: the violence triangle (violence),
+# negative/positive peace (positive_negative), dissociative vs associative relations
+# (relations), the structural theory of imperialism (imperialism), and the TRANSCEND
+# method (transcend). They are facets of one framework, not independent instruments —
+# see the note on theoretical coupling in README.md before treating them as separate
+# indicators in an MCA or latent class model.
+#
+# Converted from codebooks/relations.csv on 2026-07-27.
+#
+# Single-dimension codebook: AB / ANTI / SYM are three values of one variable, the form of
+# social relation the speaker posits between the parties. Examples are inlined rather than
+# anchored, since there is only one dimension to place them in (see SCHEMA.md §4.1).
+#
+# Definitions, examples and reasoning are carried over verbatim from the CSV. The only edits
+# are country names in `source`, normalised to the corpus spelling (AS -> United States,
+# Palestina -> Palestine, UEA -> United Arab Emirates).
+#
+# Provenance note: S/PV.9945 is NOT in data/ (the corpus runs S/PV.9400-10007). That span
+# could not be verified. All other examples were confirmed to appear verbatim.
+
+id: relations
+version: 1
+title: Social relations between the parties
+theory: >
+  Galtung, dissociative and associative relations: abiosis, antibiosis and symbiosis describe
+  the three ways parties can stand to one another — no relation, a relation of mutual
+  elimination, or a relation of mutual dependence. Dissociative approaches separate the parties
+  to stop the harm; associative approaches bind them together. The form of relation a speaker
+  posits implies the kind of peace they can imagine: separation, victory, or coexistence.
+unit: paragraph
+allow_multiple_annotations: true
+max_annotations_per_unit: 4
+
+instructions: >
+  Code the relation the speaker *posits or endorses* between the parties, not the relation
+  they describe as currently existing under duress. A speaker deploring that the parties no
+  longer speak is not asserting abiosis; a speaker declaring there is no partner to speak to
+  is.
+
+  Most paragraphs of a Security Council speech make no claim about the form of relation at all
+  and correctly receive no annotation.
+
+dimensions:
+
+  - name: relation_type
+    description: >
+      The form of social relation the speaker posits between Israelis and Palestinians — or
+      more generally between the parties to the conflict as the speaker construes them.
+    required: true
+    categories:
+
+      - code: AB
+        label: Abiosis
+        definition: >
+          No relationship, breaking off contact, refusal to interact (decoupling). The parties
+          are treated as having nothing to negotiate, no standing counterpart, or no basis for
+          contact. The relation is absent rather than hostile.
+        includes:
+          - Denial that a legitimate counterpart or partner exists
+          - Rejection of the other party's standing to act or be recognised
+        excludes:
+          - Active attempts to destroy or expel the other party (that is ANTI)
+          - Describing a breakdown in talks without endorsing it
+        positive_examples:
+          - text: >-
+              Unilateral recognition statements do not alter the reality on the ground... there
+              is no credible Palestinian partner for peace.
+            source: "S/PV.10003, Waltz (United States)"
+            annotation: {relation_type: AB}
+            reasoning: >-
+              Waltz explicitly cuts off political relations (no credible partner) and rejects
+              the validity of the other party's actions, pure decoupling.
+        # TODO: write negative_examples. The critical boundary is procedural regret — "talks
+        # have stalled", "the process is at an impasse" — which describes an absent relation
+        # without positing one, and would badly inflate AB if coded.
+        negative_examples: []
+
+      - code: ANTI
+        label: Antibiosis
+        definition: >
+          An active relationship that aims to eliminate, destroy, or expel the other (zero-sum).
+          The parties are related, but the content of the relation is the removal of one by the
+          other. Existence itself is what is at stake.
+        includes:
+          - Demands that a party disarm and depart, cease to exist, or be removed
+          - Attributing to the other side an intent to make a population disappear
+        excludes:
+          - Ordinary condemnation, sanction or pressure short of elimination
+          - Absence of relation with no eliminatory aim (that is AB)
+        positive_examples:
+          - text: >-
+              The Council must meet the moment by pressuring Hamas to... disarm and leave Gaza
+              forever.
+            source: "S/PV.9963, Shea (United States)"
+            annotation: {relation_type: ANTI}
+            reasoning: >-
+              "Leave Gaza forever" and "disappear" are active relations to eliminate the
+              existence of the opponent (Antibiosis).
+          - text: >-
+              They want the land, and they want to get rid of the people... whom they want to
+              see disappear...
+            source: "S/PV.9945, Bamya (Palestine)"   # unverified — meeting not in data/
+            annotation: {relation_type: ANTI}
+            reasoning: >-
+              "Leave Gaza forever" and "disappear" are active relations to eliminate the
+              existence of the opponent (Antibiosis).
+        # TODO: write negative_examples. ANTI will over-fire on any strongly worded
+        # condemnation. Reserve it for claims about the *removal or non-existence* of a party,
+        # not for hostility as such.
+        negative_examples: []
+
+      - code: SYM
+        label: Symbiosis
+        definition: >
+          Joint projects that lift each other up, fates tied, active coexistence. The parties
+          are construed as mutually dependent, such that neither can be secure or prosperous
+          without the other.
+        includes:
+          - Shared futures, joint prosperity, regional integration, mutual security
+          - Two-state or coexistence framings where both parties gain
+        excludes:
+          - Calls for a ceasefire or de-escalation with no shared future posited
+          - Aid and humanitarian appeals framed as one party assisting another
+        positive_examples:
+          - text: >-
+              ...sought a new Middle East where coexistence and cooperation deliver prosperity,
+              security and peace for all.
+            source: "S/PV.9442, Nusseibeh (United Arab Emirates)"
+            annotation: {relation_type: SYM}
+            reasoning: >-
+              Recognizing that the fates of both parties are tied and offering joint projects
+              that lift each other up.
+          - text: >-
+              They can live together, side by side, in peace and security, as good neighbours.
+            source: "S/PV.9442, Afonso (Mozambique)"
+            annotation: {relation_type: SYM}
+            reasoning: >-
+              Recognizing that the fates of both parties are tied and offering joint projects
+              that lift each other up.
+        # TODO: write negative_examples. SYM is the largest over-assignment risk in this
+        # codebook: almost every speech ends with a ritual invocation of "a just and lasting
+        # peace" or "the two-State solution" that posits no mutual dependence whatsoever. If
+        # SYM fires on those, it will exceed 50% prevalence and carry no information.
+        negative_examples: []
+
+
+# TODO: write worked_examples. At minimum one paragraph with `annotations: []` — ideally the
+# ritual two-State closing formula, since that is the case most likely to be miscoded as SYM.
+worked_examples: []

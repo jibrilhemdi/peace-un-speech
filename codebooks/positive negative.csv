@@ -1,0 +1,19 @@
+Score & Label,Definition EN,Real Example,Reasoning EN
+0 Pure negative peace,Just demanding a ceasefire without any vision for the future.,"1. S/PV.10003, Dar (Pakistan):
+ ""...first, an immediate, unconditional and permanent ceasefire to halt the bloodshed...""
+ 2. S/PV.9963, Bendjama (Algeria):
+ ""Let us declare a ceasefire — an unconditional and permanent ceasefire — not as a gesture, but as a duty...""",The narrative stops entirely at the physical cessation of bloodshed without including any vision of reconciliation or access.
+1 Predominantly negative peace,Cessation of violence + basic humanitarian access / civil protection.,"1. S/PV.10003, Cooper (United Kingdom):
+ ""We need a ceasefire now... immediate restoration of aid and support for medical care...""
+ 2. S/PV.10023, Narváez Ojeda (Chile):
+ ""...ceasefire agreement... towards reducing hostilities and protecting civilians.""","The presence of ""medical care"" and ""protecting civilians"" raises the score from 0 to 1, as there are efforts to mitigate physical suffering."
+2 Transitional,Cessation of violence + initial political steps/dialogue/monitoring.,"1. S/PV.10003, Dharmadhikari (France):
+ ""The urgent first phase is aimed at securing the release of hostages... The second phase is that of stabilization...""
+ 2. S/PV.9442, Afonso (Mozambique):
+ ""...stop attacks, refrain from further violence and engage in constructive dialogue.""",Describes a gradual transition. The political phases (stabilization/dialogue) are a bridge to positive peace.
+3 Predominantly positive peace,"Demanding structural change, equal rights, justice, self-determination.","1. S/PV.9841, Joyini (South Africa) ""In conclusion, we cannot allow the Palestinian people to be decimated through bombs, starvation and displacement while the world is seemingly unable to act. Similarly, their right to self-determination cannot be undermined, as it is etched in international law.""
+2. S/PV.9841 Al-Fatlawi (Iraq) ""We reaffirm our commitment to support the just Palestinian cause and the aspiration of the Palestinian people to freedom, independence and ending the occupation while fulfilling their hopes to establish an independent State with Jerusalem as its capital. Those are legitimate aspirations that require the steadfast support of the international community.""","affirming the ""right to self-determination"" as an inviolable right based on international law,
+
+affirming freedom, independence, and the end of occupation as ""legitimate aspirations,"" without any sign of ""cooperation"" with Israel."
+4 Pure positive peace,"Vision of active cooperation, common institutions, full equality, integration.","1. S/PV.9442, Nusseibeh (United Arab Emirates):
+ ""...sought a new Middle East where coexistence and cooperation deliver prosperity, security and peace for all.""","A transcendent vision where security and prosperity are mutually reinforcing (shared space, coexistence)."
