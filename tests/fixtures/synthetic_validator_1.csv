@@ -1,0 +1,5 @@
+sample_id,human_task_status,human_code__VD,human_evidence_quote,human_notes,context_used
+SYN-3,CODABLE,PRESENT,synthetic quote,,NO
+SYN-1,CODABLE,PRESENT,synthetic quote,,NO
+SYN-4,CODABLE,ABSENT,,,NO
+SYN-2,CODABLE,ABSENT,,,NO

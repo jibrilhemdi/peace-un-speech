@@ -1,0 +1,62 @@
+status: provisional_unvalidated
+source:
+  database: data/db/annotations.db
+  corpus: data/interim/un_speeches_extracted_extended.csv
+  meeting_manifest: data/raw/meeting_manifest.csv
+  codebooks: codebooks
+  output: research_outputs
+selected_runs:
+  positive_negative: {version: 1, run_id: laguna}
+  violence: {version: 1, run_id: laguna}
+  relations: {version: 2, run_id: laguna-v2}
+  imperialism: {version: 1, run_id: laguna}
+  transcend: {version: 1, run_id: laguna}
+dimensions:
+  positive_negative: [PN0, PN1, PN2, PN3, PN4]
+  violence_type: [VD, VS, VC]
+  attribution: [ATR-ISR, ATR-PAL, NONE]
+  relation_type: [SYM, ANTI, AB]
+  imperialism: [I0, I1, I2, I3, I4]
+  transcend: [T0, T1, T2, T3, T4]
+core_profile_dimensions:
+  positive_negative: positive_negative
+  violence: violence_type
+  relations: relation_type
+  imperialism: imperialism
+  transcend: transcend
+population:
+  start_date: 2023-10-07
+  end_date: 2025-12-31
+  meeting_rule: palestine_agenda
+  role: representative
+  rq1_forums: [SC, GA]
+  rq2_rq3_forum: SC
+  observer_cases: [Palestine, Holy See]
+  party_cases: [Israel, Palestine]
+thresholds:
+  primary: {unique_paragraphs: 100, speeches: 15, evaluated_per_core_codebook: 20}
+  sensitivity: {unique_paragraphs: 50, speeches: 10, evaluated_per_core_codebook: 10}
+validation:
+  probability_per_codebook: 100
+  diagnostic_per_codebook: 50
+  validators: 2
+  seed: 20260913
+analysis:
+  seed: 20260913
+  prevalence_bootstrap_replicates: 500
+  min_country_positives: 0
+  min_country_negatives: 0
+  min_total_positives: 30
+  min_total_negatives: 30
+  posterior_draws: 400
+  stability_draws: 400
+  sensitivity_features:
+    - Y__positive_negative__positive_negative__PN3
+    - Y__violence__violence_type__VD
+  profile_k: [2, 3, 4, 5]
+  knn_neighbors: 3
+  bootstrap_target: 500
+  bootstrap_smoke_replicates: 2
+latex:
+  output: research_outputs/latex
+  float_decimals: 3

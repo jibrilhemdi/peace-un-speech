@@ -1,0 +1,5 @@
+sample_id,codebook_id,sampling_component,prediction_code__VD
+SYN-1,violence,probability,1
+SYN-2,violence,probability,0
+SYN-3,violence,diagnostic,1
+SYN-4,violence,diagnostic,0

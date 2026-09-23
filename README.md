@@ -1,6 +1,6 @@
 # Constructing Peace Meaning from UN Speech in the Context of the Palestine-Israel Conflict
 
-This project examines how countries articulate and frame their understanding of peace in United Nations speeches addressing the Palestine-Israel conflict. The analysis focuses on the period from the October 7, 2023 escalation through December 2025, using speech records from the UN Digital Library.
+This project examines how countries articulate and frame their understanding of peace in United Nations speeches addressing the Palestine-Israel conflict. Its statistical window is 7 October 2023 through 31 December 2025, using annotated UN verbatim meeting records and an explicit Palestine-agenda rule.
 
 Our analytical framework draws on several interconnected concepts from Johan Galtung’s peace and conflict theory:
 
@@ -15,107 +15,44 @@ To systematically interpret diplomatic language at scale, we annotate the speech
 
 ---
 
-# UN Speeches Collector
+# Current project layout and scope
 
-Collect UN speeches related to the Palestine question from the UN Digital Library.
+The statistical corpus is selected from existing annotations by meeting date (7 October
+2023 through 31 December 2025) and by a meeting agenda that names Palestine. The last
+collected meeting satisfying both rules is 16 December 2025. The selection decision,
+including meetings excluded under other agendas, is recorded in
+[the decision log](docs/DECISIONS.md) and the generated `research_outputs/audit/meeting_scope.csv`.
+The collected manifest has 112 eligible meetings; 93 have the selected annotations.
+The current results describe those 93 meetings, and human validation is pending.
 
-## Search Configuration
-
-- **Subject**: "Palestine question"
-- **Date range**: October 7, 2023 to December 31, 2025
-- **Collection**: Speeches
-
-## Usage
+The active code is an installable package under `src/un_speeches/`; older analysis code
+and its results are in `archive/legacy_analysis/`. `research_outputs/` holds current,
+provisional analysis products. `paper/` contains a compilable two-column ACM anonymous
+review draft.
+The data layers and backup needs are described in [data/README.md](data/README.md).
 
 ```bash
 pip install -r requirements.txt
-python scripts/collect/scrape_un_library.py
+pip install -e .
+python -m un_speeches.collect.fetch_meeting_records --from-date 2023-10-07 --to-date 2025-12-31
+python -m un_speeches.collect.select_corpus --rule agenda
+python -m un_speeches.collect.extract_speech_turns --pdf-dir data/raw/corpus_pdfs
 ```
 
-The script will:
-1. Open the search URL with the configured filters
-2. Extract speech titles and URLs from each result page
-3. Navigate through all pages using pagination
-4. Save unique results to `data/raw/un_speeches_palestine.csv`, with the PDFs in
-   `data/raw/pdfs/` and resume state in `data/raw/collection_checkpoint.json`
-
-## Output
-
-The CSV file contains:
-- `title`: The speaker and country
-- `url`: Link to the full record on the UN Digital Library
-
-## Extracting the speeches
-
-```bash
-python scripts/collect/extract_speech_turns.py
-```
-
-Parses every PDF in `data/raw/pdfs/` into one row per speaker turn and writes
-`data/interim/un_speeches_extracted.csv`.
-
-Notes on how it works:
-
-- The downloaded PDFs are **full verbatim meeting records**, not single speeches, and the
-  collector saved the same record once per speaker — the 500 files are only 101 distinct
-  meetings. The script de-duplicates by content hash and parses each meeting once, so it
-  recovers every speech in those meetings, not just the ones that had a catalogue record.
-- Turns are detected from **typography, not regexes**: UN records always set the speaker's
-  name in bold at the start of their first paragraph, e.g.
-  `**Mr. Selim** (Egypt) (*spoke in Arabic*): ...`. Running heads, mastheads, vote tallies
-  and italic stage directions are filtered out by font size, style and position.
-- 99.7% of body text lands in a speech; the remainder is agenda headings, roll-call vote
-  lists and procedural notes.
-
-### Columns
-
-| column | meaning |
-| --- | --- |
-| `ambassador_name` | Speaker, e.g. `Mr. Selim`. For `The President` the name is resolved from the cover-page roster (`Mr. X/Mr. Y` when the roster lists alternates). |
-| `country` | Country/entity, normalised (`United States of America` → `United States`). Empty for UN briefers. |
-| `speech` | Full text of the intervention, paragraphs separated by blank lines. |
-| `is_procedural` | `True` when the turn is *entirely* chair housekeeping — see below. |
-| `substantive_word_count` | Words left after procedural paragraphs are removed. |
-| `role` | `representative`, `president` or `official/briefer`. |
-| `language` | Language spoken, from `(spoke in ...)`; defaults to English. |
-| `speaker_header` | Raw header line as printed in the record. |
-| `doc_symbol`, `meeting_date`, `meeting_number` | Meeting identifiers. |
-| `turn_index`, `word_count` | Position within the meeting, and speech length. |
-| `source_pdf`, `record_ids` | Provenance: the parsed file, and every catalogue record that pointed at it. |
-
-### Procedural turns
-
-Much of what the chair says is housekeeping — "I now give the floor to...", invitations
-under rules 37/39, vote mechanics, speaking-time reminders. Every row is kept, but each
-**paragraph** is classified, and `is_procedural` is `True` only when *nothing* substantive
-remains. That distinction matters because the President regularly opens with housekeeping
-and then delivers a national statement ("I shall now make a statement in my capacity as the
-representative of..."); those turns stay `False` and keep their full text.
-
-962 of 3,210 rows are procedural — 29% of rows but only 1.3% of the words.
-
-```python
-df = df[~df.is_procedural]                      # drop pure housekeeping
-df = df[df.role == "representative"]            # ...and keep only Member State statements
-df = df[df.substantive_word_count >= 50]        # ...or filter by length instead
-```
-
-`is_procedural` is deliberately conservative: it fires only on recognised chair formulas,
-so a residue of ~130 short President turns with one-off phrasing is left unflagged. Use
-`substantive_word_count` if you want a stricter cut.
-
-## Further Reading
-
-- [UN Digital Library Help](https://digitallibrary.un.org/pages?ln=en)
-- [Ask DAG: What datasets are available?](https://ask.un.org/faq/432839)
+The archived Selenium collector and the older raw-count analysis are retained only for
+provenance. The current research analysis reads the existing annotation database and
+requires no new LLM calls. See [RESEARCH_PIPELINE.md](RESEARCH_PIPELINE.md) for the
+statistical commands.
 
 ---
 
 # Annotation pipeline
 
-Deductive content analysis of the corpus: theoretically-derived codebooks are applied to
-speech paragraphs by an LLM, producing a document × code matrix for MCA, latent class
-analysis and regression.
+Deductive content analysis of the corpus: theory-derived codebooks are applied to
+speech paragraphs by an LLM, producing paragraph-level variables for the current
+descriptive, comparative, and profile analyses. The annotation notes below also
+retain historical design context; the current statistical protocol is in
+[RESEARCH_PIPELINE.md](RESEARCH_PIPELINE.md).
 
 **Adding a codebook is a YAML file and nothing else.** No Python is edited to add codebook 3,
 4 or 5. If a change seems to require one, the schema is missing a field — add it to
@@ -128,7 +65,7 @@ pip install -r requirements.txt
 export OPENROUTER_API_KEY=sk-or-...      # environment only; never in a file, DB, or log
 ```
 
-Everything else is configured in [`config.yaml`](config.yaml): model and fallbacks, rate and
+Everything else is configured in [`config/annotation.yaml`](config/annotation.yaml): model and fallbacks, rate and
 quota limits, corpus filter, segmentation rules, regional-group map, export options.
 
 ## Adding codebook #3
@@ -137,28 +74,28 @@ This is the whole loop. No code edits at any step.
 
 ```bash
 # 1. write it, following codebooks/SCHEMA.md — or start from a CSV:
-python scripts/codebook/build_from_csv.py codebooks/legitimacy.csv
+python -m un_speeches.codebook.build_from_csv codebooks/legitimacy.csv
 $EDITOR codebooks/legitimacy.yaml
 
 # 2. lint — fails on duplicate codes, thin definitions, broken conditional_on;
 #    warns about missing negative_examples until you write them
-python scripts/codebook/validate.py
+python -m un_speeches.codebook.validate
 
 # 3. pilot: ~40 speeches stratified by regional group x speech length, under an hour of quota
-python scripts/annotate/run_annotation.py --codebook legitimacy --pilot 40
+python -m un_speeches.annotate.run_annotation --codebook legitimacy --pilot 40
 
 # 4. adjudicate data/pilots/pilot_legitimacy_<timestamp>.csv — one row per paragraph, with empty
 #    adj_agree / adj_correct_codes / adj_notes columns. Write negative_examples for anything
 #    over-firing, then bump `version` in the YAML.
 
 # 5. full run. Resumable — run it daily until it finishes.
-python scripts/annotate/run_annotation.py --codebook legitimacy
+python -m un_speeches.annotate.run_annotation --codebook legitimacy
 
 # 6. check prevalence and drift
-python scripts/annotate/report_status.py
+python -m un_speeches.annotate.report_status
 
 # 7. export
-python scripts/export/build_tables.py
+python -m un_speeches.export.build_tables
 ```
 
 A full pass is **refused** for a codebook with no completed pilot unless `--force` is passed.
@@ -166,27 +103,28 @@ A bad prompt costs three days of quota; a pilot costs under an hour.
 
 ## The scripts
 
-`scripts/` is laid out by pipeline stage, in the order the stages run. Every script is a
-standalone CLI, run as `python scripts/<stage>/<script>.py`, and resolves its paths from the
+`src/un_speeches/` is laid out by pipeline stage, in the order the stages run. Every script is a
+module CLI, run as `python -m un_speeches.<stage>.<module>`, and resolves its paths from the
 repo root, so the working directory never matters.
 
 ```
-scripts/
+src/un_speeches/
 ├── collect/      the corpus:    ODS → meeting PDFs → selection → speaker turns
 ├── codebook/     the instrument: CSV → draft YAML → lint
 ├── annotate/     the labels:    speeches → units → model annotations → progress
 ├── export/       the tables:    job store → analysis-ready files
 ├── validation/   the check:     probability sample for human coding
+├── research/     the statistics: scoped preparation → RQ1–RQ3 → reports
 └── lib/          shared machinery, imported by the stages above
 ```
 
 Collection runs in three steps — fetch everything, then narrow, then extract:
 
 ```bash
-python scripts/collect/fetch_meeting_records.py --from-date 2023-10-07 --to-date 2025-12-31
-python scripts/collect/fetch_meeting_records.py --series A/ES-10/PV --start 35 --end 60
-python scripts/collect/select_corpus.py                     # rule A: agenda names Palestine
-python scripts/collect/extract_speech_turns.py --pdf-dir data/raw/corpus_pdfs
+python -m un_speeches.collect.fetch_meeting_records --from-date 2023-10-07 --to-date 2025-12-31
+python -m un_speeches.collect.fetch_meeting_records --series A/ES-10/PV --start 35 --end 60
+python -m un_speeches.collect.select_corpus                     # rule A: agenda names Palestine
+python -m un_speeches.collect.extract_speech_turns --pdf-dir data/raw/corpus_pdfs
 ```
 
 | script | what it does |
@@ -194,7 +132,7 @@ python scripts/collect/extract_speech_turns.py --pdf-dir data/raw/corpus_pdfs
 | `collect/fetch_meeting_records.py` | Fetches verbatim records by symbol from `documents.un.org`. Enumerates meeting numbers rather than paging a search, so coverage is complete by construction. Writes `data/raw/meeting_manifest.csv` with the meeting date, agenda and term counts read from each PDF. `--series` selects S/PV, A/ES-10/PV, A/78/PV, …; `--reparse` re-derives the manifest from PDFs already on disk. |
 | `collect/select_corpus.py` | Narrows the download to the corpus and symlinks the chosen PDFs into `data/raw/corpus_pdfs/`. Default rule keeps a meeting only if its agenda item names Palestine. Cheap and re-runnable — the corpus definition is an explicit decision, not a side effect of collection. |
 | `collect/extract_speech_turns.py` | PDFs → one row per speaker turn. De-duplicates records by content hash and detects turns from the typography of UN verbatim records, not regexes. |
-| `collect/scrape_un_library.py` | **Superseded — kept for provenance only.** Drove the Digital Library search with Selenium. Its pagination cannot advance past ~500 records, `/search` sits behind an AWS WAF challenge, and its `creation_date` filter matches the catalogue date rather than the meeting date. It also no longer imports: `undetected_chromedriver` requires `distutils`, removed in Python 3.13+. |
+| `archive/legacy_collector/scrape_un_library.py` | **Superseded — kept for provenance only.** Drove the Digital Library search with Selenium. Its pagination cannot advance past ~500 records, `/search` sits behind an AWS WAF challenge, and its `creation_date` filter matches the catalogue date rather than the meeting date. It also no longer imports: `undetected_chromedriver` requires `distutils`, removed in Python 3.13+. |
 | `codebook/build_from_csv.py` | Converts a codebook CSV into a **draft** YAML. Mechanical work only — splits numbered examples, extracts `S/PV.xxxx, Speaker (Country)` sources, normalises country names, detects an ordinal 0–4 scale. Marks everything needing judgement with `# TODO`. |
 | `codebook/validate.py` | Lints every `codebooks/*.yaml` against SCHEMA.md. Exit 1 on error. |
 | `annotate/segment_units.py` | Corpus → `data/interim/units.parquet` + the `units` table. Paragraph-level procedural marking, word-count floor, stable unit IDs, distribution report. |
@@ -204,14 +142,15 @@ python scripts/collect/extract_speech_turns.py --pdf-dir data/raw/corpus_pdfs
 | `export/dump_database.py` | Dumps the DB's own tables to CSV/Excel, plus an `annotations_with_text` sheet pairing every label with the paragraph it labels. Read-only. |
 | `validation/draw_gold_sample.py` | Probability sample with exact, recorded inclusion probabilities. |
 
-Shared machinery is in `scripts/lib/` — none of it knows the name of any codebook, dimension
+Shared machinery is in `src/un_speeches/lib/` — none of it knows the name of any codebook, dimension
 or code.
 
 ## How annotation works
 
 **One request per (speech, codebook).** At ~8.8 paragraphs per speech, per-paragraph requests
-would need ~19,000 calls per codebook — 20 days at 950/day. Batching brings it to ~2,245
-calls, about 3 days per codebook.
+would need ~19,000 calls per codebook. Batching brings it to ~2,245 calls per codebook;
+completion time is governed by the configured local budget, pacing, model latency, and any
+upstream provider limit.
 
 The static codebook block leads every prompt and the speech trails it, so the prefix is
 byte-identical across every request for a codebook version and prompt-prefix caching applies.
@@ -320,7 +259,7 @@ than after a full pass: run the pilot, export, and correlate the country profile
 
 ## Changing the model, and re-running on a new one
 
-The provider model is chosen in `config.yaml` and **recorded on every job row at request
+The provider model is chosen in `config/annotation.yaml` and **recorded on every job row at request
 time** — it is never inferred from the response. It is carried into all three exports:
 
 | table | column | meaning |
@@ -344,10 +283,10 @@ the same instrument was applied again. Nothing existing is touched:
 
 ```bash
 # re-run violence on the current model, alongside the original
-python scripts/annotate/run_annotation.py --codebook violence --run-id laguna --force
+python -m un_speeches.annotate.run_annotation --codebook violence --run-id laguna --force
 
 # export both side by side
-python scripts/export/build_tables.py --codebook violence --run-id main --run-id laguna
+python -m un_speeches.export.build_tables --codebook violence --run-id main --run-id laguna
 ```
 
 With more than one `--run-id` the tables change shape deliberately:
@@ -390,13 +329,13 @@ data/
 └── samples/                 small hand-made spot-check extracts
 ```
 
-Every one of these locations is set in the `paths:` block of `config.yaml` and read through
+Every one of these locations is set in the `paths:` block of `config/annotation.yaml` and read through
 `Config.path_for()`. Move a directory there and the whole pipeline follows; no script hardcodes
 a path under `data/`.
 
 ## Outputs
 
-`scripts/export/build_tables.py` writes three analysis tables. Each is written once per format, and the
+`un_speeches.export.build_tables` writes three analysis tables. Each is written once per format, and the
 formats are all the same rows:
 
 | table | contents |
@@ -406,8 +345,8 @@ formats are all the same rows:
 | `country_profiles` | per country, the share of its annotated paragraphs carrying each code |
 
 ```bash
-python scripts/export/build_tables.py                      # parquet + csv + excel
-python scripts/export/build_tables.py --formats parquet    # canonical only
+python -m un_speeches.export.build_tables                      # parquet + csv + excel
+python -m un_speeches.export.build_tables --formats parquet    # canonical only
 ```
 
 - `data/exports/parquet/` — **canonical.** Analyse from these. They preserve `Int8`/`Float32`
@@ -427,7 +366,7 @@ one.
 ### Reading the job store without SQL
 
 ```bash
-python scripts/export/dump_database.py
+python -m un_speeches.export.dump_database
 ```
 
 Dumps every table in `annotations.db` to `data/exports/db/csv/` and to one workbook at
@@ -445,7 +384,7 @@ the thing that damages a store that took days of quota to fill.
 ## Gold sample
 
 ```bash
-python scripts/validation/draw_gold_sample.py --codebook violence -n 300 \
+python -m un_speeches.validation.draw_gold_sample --codebook violence -n 300 \
     --stratify-on violence_type --oversample VC=4
 ```
 

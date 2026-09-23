@@ -1,0 +1,224 @@
+\documentclass[sigconf,review,anonymous]{acmart}
+\usepackage{graphicx}
+
+% Draft only: author, venue, and publication rights metadata are pending.
+\setcopyright{none}
+\settopmatter{printacmref=false,printccs=false}
+\copyrightyear{}
+\acmConference[]{}{}{}
+\acmDOI{}
+\acmISBN{}
+\title{Constructing Peace in UN Discourse on the Palestine Question}
+\author{Author information withheld for review}
+
+\begin{document}
+\begin{abstract}
+\emph{Placeholder: Write the abstract after human validation and interpretation.}
+\end{abstract}
+\keywords{United Nations, Palestine question, peace discourse, Galtung, content analysis}
+\maketitle
+% No venue metadata exists yet, so omit ACM's otherwise empty conference header.
+\pagestyle{plain}
+
+\section{Introduction}
+\emph{Placeholder: Develop the research problem, contribution, and motivation.}
+
+\section{Related Work and Theoretical Framework}
+\emph{Placeholder: Add verified scholarship on peace theory, diplomatic discourse,
+and computational content analysis.}
+
+\section{Research Questions}
+\begin{enumerate}
+  \item How is peace constructed in UN member-state discourse on the Palestine question
+  through Galtungian dimensions of peace, violence, relational structure, domination,
+  and conflict transformation?
+  \item How does the relative emphasis on these dimensions vary across member states?
+  \item What recurring Galtungian peace profiles emerge among member states, and which
+  states exhibit similar or contrasting configurations?
+\end{enumerate}
+
+\section{Corpus and Measurement}
+\subsection{Meeting and Speaker Selection}
+The meeting search covers 7 October 2023 through 31 December 2025, inclusive.
+A meeting enters the statistical corpus only when the collected UN meeting manifest
+records an agenda item naming Palestine. This meeting-level rule does not depend
+on incidental Palestine or Gaza mentions in speeches; it also excludes Gaza-focused
+debates held under other agenda items. The latest qualifying meeting in the
+collection was on 16 December 2025 \cite{UNSC10068}. A meeting on 29 December
+2025 about Israel's recognition of Somaliland is excluded despite incidental
+Palestine and Gaza references \cite{UNSC10084}.
+
+The manifest identifies 112 meetings satisfying the date and agenda rules.
+The selected annotation runs cover 93 of them; the other 19, mostly General
+Assembly records, are listed in the meeting-scope audit. The results therefore
+describe the annotated subset, not all eligible UN meetings. Speeches are
+segmented into paragraphs. The main population consists of substantive,
+nonprocedural paragraphs spoken by member-state representatives. UN officials
+and observer cases, including Palestine, are excluded from the main state
+comparison; Israel remains a member-state case. RQ1 includes Security Council
+and General Assembly records and contains 14,463 paragraphs from 1,751 speeches.
+RQ2 and RQ3 use the Security Council subset, with 14,070 paragraphs before
+country eligibility thresholds are applied.
+% Sources: audit/meeting_scope.csv and reports/provisional_report.md.
+
+\subsection{Paragraph Annotation}
+Five theory-guided codebooks measure negative and positive peace, forms of
+violence, relationships between parties, structural domination, and conflict
+transformation. The analysis selects one completed full annotation run for each:
+version 1 for positive/negative peace, violence, imperialism, and transcend,
+and version 2 for relations. A paragraph may receive multiple codes, each
+with an evidence span. Repeated evidence for the same paragraph, run, dimension,
+and code is counted once. Actor attribution in the violence codebook is
+supplementary and excluded from the core country profile.
+
+For each code, a successfully completed annotation job makes the paragraph
+evaluable. A completed job without that code contributes an observed zero;
+an absent, failed, or incomplete job remains missing. Violence attribution is
+evaluable only when a violence type was coded. Thus each code's prevalence
+denominator comprises its evaluable paragraphs, rather than every corpus
+paragraph. The annotation database was read without altering or rerunning
+the model judgments.
+% Sources: config/research.yaml and audit/audit_report.md.
+
+\subsection{Human Assessment Status}
+Two blinded reviewer packs are prepared from scoped, nonprocedural paragraphs.
+For each of five codebooks, the design contains 100 random probability-sample
+tasks and 50 purposive diagnostic tasks, giving 750 tasks over 730 distinct
+paragraphs. The diagnostic tasks emphasize rare, multi-label, and lower-confidence
+cases and will be assessed separately from the probability sample. Reviewers
+have not returned judgments, so agreement, adjudication, and measurement-error
+estimates remain pending. All findings in this draft are provisional and unvalidated.
+% Source: validation/coordinator_only/sampling_manifest.json.
+
+\section{Methods}
+\subsection{RQ1: Shared Repertoire}
+For each code, paragraph prevalence is the fraction of evaluable member-state
+paragraphs carrying that code. Ninety-five percent intervals come from 500
+bootstrap draws of speeches, carrying their paragraphs together. A complementary
+speech-weighted measure averages within-speech code shares across speeches.
+Pairwise co-occurrence uses only paragraphs evaluable for both codes; joint
+prevalence, phi correlation, and lift describe their overlap. Reproducibly
+selected high-confidence and boundary passages are reserved for close reading,
+not treated as qualitative validation by themselves.
+
+\subsection{RQ2: Cross-Country Variation}
+Country comparisons use Security Council speeches. Primary eligibility requires
+at least 100 unique paragraphs, 15 speeches, and 20 evaluated paragraphs for
+every core codebook. Sensitivity thresholds are 50 paragraphs, 10 speeches,
+and 10 evaluated paragraphs per core codebook. We report paragraph and
+speech averages separately.
+Each core code is modeled as a binary paragraph outcome when at least 30
+positive and 30 negative observations are available overall.
+
+The primary mixed model contains country and calendar-month terms, log
+paragraph word count, and random intercepts for speech and meeting. It is
+fitted with mean-field variational Bayes. Country probabilities are predicted
+over the same observed month and length distribution for every country, with
+random intercepts fixed at zero. Approximate 95\% intervals use 400 draws
+of the fitted fixed-effect approximation. Omnibus country Wald tests and
+Benjamini--Hochberg adjustments are approximate. A planned contrast
+compares Israel with the mean for other eligible states. Refits omitting
+length or replacing month with quarter check model specification. Nonconverged
+refits remain visible in diagnostics and are omitted from sensitivity
+predictions.
+
+\subsection{RQ3: Country Profiles}
+RQ3 arranges converged adjusted country probabilities from five core theory
+blocks in a country-by-code matrix. Actor attribution is excluded and missing
+values are not filled with zero. Each code is standardized across countries
+and divided by the square root of the number of retained codes in its block,
+so larger codebooks do not dominate. Principal component analysis describes
+continuous variation. Ward clustering with Euclidean distance is examined
+for two through five profiles using silhouette and group-size diagnostics;
+neutral profile identifiers are exploratory, not political labels.
+
+Two distinct checks probe the geometry without hundreds of mixed-model refits.
+First, 400 draws from the fitted mean-field fixed-effect approximations are
+reclustered. This measures uncertainty conditional on the fitted models
+without full posterior covariance or speech refitting. Second, speeches are
+resampled 400 times within country to recompute and recluster
+\emph{descriptive} profiles. This measures sensitivity to speech composition,
+not uncertainty in adjusted model predictions. Co-clustering rates, adjusted
+Rand indices, and best-match Jaccard scores summarize the checks separately.
+Neither check validates stable political groups or replaces a full model-refit
+bootstrap.
+
+% Keep each visual-only Results subsection with its own tables and figures.
+\clearpage
+\section{Results}
+\subsection{RQ1: Galtungian Repertoire}
+\input{../research_outputs/latex/paper/rq1_prevalence.tex}
+\begin{figure*}[tbp]
+\centering
+\includegraphics[width=0.88\textwidth]{../research_outputs/rq1_provisional/prevalence.png}
+\caption{Paragraph prevalence by Galtung code with speech-resampled 95\% intervals.
+Provisional and unvalidated.}
+\Description{Horizontal bars show estimated prevalence for 21 core codes,
+grouped by codebook, with interval marks at each bar end. Violence codes VD
+and VS are among the longest bars; relation code AB is near zero.}
+\label{fig:rq1-prevalence}
+\end{figure*}
+\begin{figure*}[tbp]
+\centering
+\includegraphics[width=0.80\textwidth]{../research_outputs/rq1_provisional/cooccurrence_phi.png}
+\caption{Pairwise code association on jointly evaluable paragraphs.
+Provisional and unvalidated.}
+\Description{Square heatmap with Galtung code labels on both axes. A diverging
+color scale encodes pairwise phi correlation across the matrix.}
+\label{fig:rq1-cooccurrence}
+\end{figure*}
+\clearpage
+
+\subsection{RQ2: Cross-Country Variation}
+\input{../research_outputs/latex/paper/rq2_models.tex}
+\clearpage
+
+\subsection{RQ3: Similarities and Contrasts}
+\input{../research_outputs/latex/paper/rq3_clusters.tex}
+\input{../research_outputs/latex/paper/rq3_light_stability.tex}
+\begin{figure*}[tbp]
+\centering
+\includegraphics[width=0.95\textwidth]{../research_outputs/rq3_provisional/fig_cluster_diagnostics.png}
+\caption{Ward clustering diagnostics for adjusted country profiles.
+Provisional and unvalidated.}
+\Description{Three panels compare mean silhouette width for two through five
+clusters, smallest-cluster size and largest-cluster share, and individual
+country silhouette widths for the two-cluster solution.}
+\label{fig:rq3-cluster-diagnostics}
+\end{figure*}
+\begin{figure*}[tbp]
+\centering
+\includegraphics[width=0.94\textwidth]{../research_outputs/rq3_provisional/dendrogram.png}
+\caption{Ward dendrogram of standardized, block-scaled adjusted country profiles.
+Provisional and unvalidated.}
+\Description{Hierarchical tree with country names at the leaves and branch
+height representing Ward linkage distance between adjusted profiles.}
+\label{fig:rq3-dendrogram}
+\end{figure*}
+\begin{figure*}[tbp]
+\centering
+\includegraphics[width=0.94\textwidth]{../research_outputs/rq3_provisional/fig_knn_similarity_network.png}
+\caption{Supplementary local-similarity network of adjusted country profiles.
+Provisional and unvalidated.}
+\Description{Countries appear as labeled nodes positioned by the first two
+principal components. Edges connect nearest neighbors based on distances in
+the complete standardized, block-scaled profile.}
+\label{fig:rq3-network}
+\end{figure*}
+\clearpage
+
+\section{Discussion}
+\emph{Placeholder: Integrate the three research questions after human assessment
+and close reading of selected passages.}
+
+\section{Limitations and Research Ethics}
+\emph{Placeholder: Develop the implications of agenda selection, incomplete
+annotations, speech opportunity, model approximation, translation, and
+measurement error.}
+
+\section{Conclusion}
+\emph{Placeholder: Write conclusions after validation and interpretation.}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+\end{document}

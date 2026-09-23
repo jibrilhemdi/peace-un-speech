@@ -43,3 +43,23 @@ venv/
 *.swp
 .idea/
 .vscode/
+
+# Misc
+UN_Palestine_Galtung_Research_Plan.docx
+
+# Generated research snapshots may contain source text and blinded review material.
+research_outputs/
+archive/research_outputs_pre_scope_fix/
+
+# Python package and paper build products
+*.egg-info/
+build/
+dist/
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.out
+paper/*.pdf
