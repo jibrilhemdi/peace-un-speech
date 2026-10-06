@@ -39,8 +39,8 @@ def cluster_diagnostic_figure(rdir: Path, cache: Path) -> Path:
 
     fig, axes = plt.subplots(1, 3, figsize=(13.2, 4.0))
     ax = axes[0]
-    ax.plot(diag.k, diag.silhouette, "o-", color="#3569a8", lw=1.7)
-    ax.axvline(best_k, color="#c8453c", ls="--", lw=1.2)
+    ax.plot(diag.k, diag.silhouette, "o-", color="#aec4e3", lw=1.7)
+    ax.axvline(best_k, color="#d5a793", ls="--", lw=1.2)
     ax.annotate(f"silhouette maximum: k={best_k}",
                 (best_k, float(diag.loc[diag.k.eq(best_k), "silhouette"].iloc[0])),
                 xytext=(7, -16), textcoords="offset points", fontsize=8)
@@ -48,17 +48,17 @@ def cluster_diagnostic_figure(rdir: Path, cache: Path) -> Path:
     ax.set_ylabel("Mean silhouette width"); ax.set_title("(a) Separation across $k$")
 
     ax = axes[1]
-    ax.plot(diag.k, diag.min_cluster_size, "s-", color="#5a8f5a", label="smallest cluster")
+    ax.plot(diag.k, diag.min_cluster_size, "s-", color="#add3c6", label="smallest cluster")
     if "largest_cluster_share" in diag:
         ax2 = ax.twinx()
-        ax2.plot(diag.k, diag.largest_cluster_share, "o--", color="#9b6bb3", label="largest share")
-        ax2.set_ylabel("Largest-cluster share", color="#9b6bb3"); ax2.set_ylim(0, 1)
-    ax.axvline(best_k, color="#c8453c", ls="--", lw=1.2)
+        ax2.plot(diag.k, diag.largest_cluster_share, "o--", color="#b9acd0", label="largest share")
+        ax2.set_ylabel("Largest-cluster share", color="#b9acd0"); ax2.set_ylim(0, 1)
+    ax.axvline(best_k, color="#d5a793", ls="--", lw=1.2)
     ax.set_xticks(diag.k); ax.set_xlabel("Number of clusters $k$")
     ax.set_ylabel("Countries in smallest cluster"); ax.set_title("(b) Cluster balance")
 
     ax = axes[2]; y = 0
-    colors = plt.get_cmap("tab10")
+    colors = plt.get_cmap("Pastel2")
     for i, group in enumerate(sorted(np.unique(labels))):
         values = np.sort(widths[labels == group])
         ax.barh(np.arange(y, y + len(values)), values, height=0.9,
@@ -70,7 +70,7 @@ def cluster_diagnostic_figure(rdir: Path, cache: Path) -> Path:
     ax.set_yticks([]); ax.set_xlabel("Country silhouette width")
     ax.set_title(f"(c) Country widths at $k={best_k}$"); ax.legend(fontsize=7)
 
-    fig.suptitle(f"Ward cluster diagnostics — {STATUS}", fontsize=12)
+    fig.suptitle("Ward cluster diagnostics", fontsize=12)
     fig.tight_layout(); path = rdir / "fig_cluster_diagnostics.png"
     fig.savefig(path, dpi=220, bbox_inches="tight"); plt.close(fig)
     legacy=rdir/"cluster_diagnostics.png"
@@ -116,7 +116,7 @@ def knn_similarity_graph(rdir: Path, cache: Path, neighbors: int = 3) -> tuple[P
     nodes["degree"] = nodes.country.map(dict(graph.degree())).astype(int)
 
     fig, ax = plt.subplots(figsize=(11.5, 8.0))
-    palette = {p: plt.get_cmap("tab10")(i) for i, p in enumerate(sorted(profiles.unique()))}
+    palette = {p: plt.get_cmap("Pastel2")(i) for i, p in enumerate(sorted(profiles.unique()))}
     pos = {c: (float(scores.loc[c, "PC1"]), float(scores.loc[c, "PC2"])) for c in names}
     widths = [0.35 + 2.3 * graph[a][b]["weight"] for a, b in graph.edges]
     alphas = [0.18 + 0.62 * graph[a][b]["weight"] for a, b in graph.edges]
@@ -131,7 +131,7 @@ def knn_similarity_graph(rdir: Path, cache: Path, neighbors: int = 3) -> tuple[P
     ax.axhline(0, color="#dddddd", lw=0.6); ax.axvline(0, color="#dddddd", lw=0.6)
     ax.set_xlabel("PC1 score (layout only)"); ax.set_ylabel("PC2 score (layout only)")
     ax.set_title(f"{k}-nearest-neighbor country similarity network\n"
-                 f"Edges use full adjusted profile distance; positions use PC1–PC2 — {STATUS}")
+                 "Edges use full adjusted profile distance; positions use PC1–PC2")
     ax.text(0.01, 0.01, "Descriptive local-neighborhood view; not a clustering or significance test.",
             transform=ax.transAxes, fontsize=7, color="#555555")
     fig.tight_layout(); fig_path = rdir / "fig_knn_similarity_network.png"
@@ -241,10 +241,10 @@ TABLE_SPECS: dict[str, tuple[list[str] | None, str]] = {
     "audit/joint_coverage.csv": (None, "Joint dimension-evaluation coverage"),
     "audit/source_reconciliation.csv": (None, "Source reconciliation"),
     "audit/dependency_blockers.csv": (None, "Dependency and blocker report"),
-    "rq1_provisional/prevalence.csv": (["codebook_id","dimension","code","positive_units","evaluable_units","missing_units","paragraph_prevalence","cluster_boot_ci_low","cluster_boot_ci_high","speech_weighted_mean"], "Provisional Galtung-code prevalence"),
-    "rq1_provisional/cooccurrence.csv": (["feature_a","feature_b","joint_n","joint_positive","joint_prevalence","phi","lift","sparse"], "Provisional pairwise co-occurrence statistics"),
+    "rq1_provisional/prevalence.csv": (["codebook_id","dimension","code","positive_units","evaluable_units","missing_units","paragraph_prevalence","cluster_boot_ci_low","cluster_boot_ci_high","speech_weighted_mean"], "Galtung-code prevalence"),
+    "rq1_provisional/cooccurrence.csv": (["feature_a","feature_b","joint_n","joint_positive","joint_prevalence","phi","lift","sparse"], "Pairwise co-occurrence statistics"),
     "rq2_provisional/model_diagnostics.csv": (["feature","n_units","n_speeches","n_meetings","n_countries","positives","status","converged","country_p","country_p_bh"], "Mixed-model diagnostics and approximate omnibus tests"),
-    "rq2_provisional/planned_contrasts.csv": (["feature","contrast","difference","ci_low","ci_high","p_approx","p_approx_bh"], "Prespecified provisional probability contrasts"),
+    "rq2_provisional/planned_contrasts.csv": (["feature","contrast","difference","ci_low","ci_high","p_approx","p_approx_bh"], "Prespecified probability contrasts"),
     "rq2_provisional/sensitivity_model_diagnostics.csv": (["feature","variant","status","converged","n_units","country_p"], "RQ2 model-specification sensitivities"),
     "rq3_provisional/cluster_k_diagnostics.csv": (None, "Ward clustering diagnostics across k"),
     "rq3_provisional/cluster_assignments.csv": (None, "Neutral profile assignments across k"),
@@ -264,6 +264,12 @@ def export_latex(root: Path, output: Path, decimals: int = 3) -> list[Path]:
         if not src.exists() or src.stat().st_size==0: continue
         df=pd.read_csv(src)
         if columns is not None: df=df[[c for c in columns if c in df.columns]]
+        # Keep validation status in canonical data and the manuscript's validation
+        # subsection, while retaining meaningful convergence diagnostics in tables.
+        if "status" in df and df.status.eq(STATUS).all():
+            df=df.drop(columns="status")
+        if "interpretation" in df:
+            df["interpretation"]=df.interpretation.str.replace("provisional sensitivity; ", "", regex=False)
         # Repeated bootstrap rows are useful as CSV, but unwieldy in a paper; summarize them.
         if rel.endswith("bootstrap_cluster_jaccard.csv") and len(df):
             df=(df.groupby(["k","base_profile_id","run_status"]).best_match_jaccard
@@ -271,59 +277,18 @@ def export_latex(root: Path, output: Path, decimals: int = 3) -> list[Path]:
         target=output/Path(rel).with_suffix(".tex"); target.parent.mkdir(parents=True,exist_ok=True)
         label="tab:"+Path(rel).with_suffix("").as_posix().replace("/","-").replace("_","-")
         latex=df.to_latex(index=False,longtable=len(df)>45,escape=True,
-                          float_format=lambda x:f"{x:.{decimals}f}",caption=f"{caption} ({STATUS}).",label=label,
+                          float_format=lambda x:f"{x:.{decimals}f}",caption=f"{caption}.",label=label,
                           na_rep="--")
         target.write_text("% Generated; do not hand-edit. Requires booktabs and longtable.\n"+latex,encoding="utf-8")
         written.append(target); inputs.append(target.relative_to(output).as_posix())
     master=output/"research_tables.tex"
     master.write_text("% Add \\usepackage{booktabs,longtable} to the preamble.\n"+
                       "\n".join(f"\\input{{{p}}}" for p in inputs)+"\n",encoding="utf-8")
-    compact_dir = output / "paper"
-    compact_dir.mkdir(parents=True, exist_ok=True)
-    compact: list[tuple[str, pd.DataFrame, str]] = []
-    if (root / "rq1_provisional/prevalence.csv").exists():
-        d = pd.read_csv(root / "rq1_provisional/prevalence.csv")
-        compact.append(("rq1_prevalence", pd.DataFrame({
-            "Code": d.code,
-            "Share": d.paragraph_prevalence.map(lambda x: f"{100*x:.1f}\\%"),
-            "95\\% CI": [f"{100*a:.1f}--{100*b:.1f}\\%" for a,b in zip(d.cluster_boot_ci_low,d.cluster_boot_ci_high)],
-            "Evaluated": d.evaluable_units.map(lambda x: f"{int(x):,}"),
-        }), "Galtung code prevalence among eligible annotated paragraphs"))
-    if (root / "rq2_provisional/model_diagnostics.csv").exists():
-        d = pd.read_csv(root / "rq2_provisional/model_diagnostics.csv")
-        compact.append(("rq2_models", pd.DataFrame({
-            "Code": d.feature.str.split("__").str[-1],
-            "Countries": d.n_countries.map(lambda x: "--" if pd.isna(x) else str(int(x))),
-            "Paragraphs": d.n_units.map(lambda x: "--" if pd.isna(x) else f"{int(x):,}"),
-            "Converged": d.converged.astype(str).str.lower().eq("true").map({True:"yes",False:"no"}),
-        }), "Scoped country-model diagnostics"))
-    if (root / "rq3_provisional/cluster_k_diagnostics.csv").exists():
-        d = pd.read_csv(root / "rq3_provisional/cluster_k_diagnostics.csv")
-        small = pd.DataFrame({
-            "$k$": d.k.astype(int), "Silhouette": d.silhouette.map(lambda x:f"{x:.3f}"),
-        })
-        if "min_cluster_size" in d:
-            small["Smallest group"] = d.min_cluster_size.astype(int)
-        if "largest_cluster_share" in d:
-            small["Largest share"] = d.largest_cluster_share.map(lambda x:f"{100*x:.1f}\\%")
-        compact.append(("rq3_clusters", small, "Ward profile diagnostics"))
-    if (root / "rq3_provisional/light_stability_summary.csv").exists():
-        d = pd.read_csv(root / "rq3_provisional/light_stability_summary.csv")
-        compact.append(("rq3_light_stability", pd.DataFrame({
-            "Check": d.method.map({"mean_field_model_draws":"Model draws",
-                                    "speech_resampled_descriptive":"Speech sample"}),
-            "$k$": d.k.astype(int), "Runs": d.replicates.astype(int),
-            "Mean ARI": d.mean_ari.map(lambda x:f"{x:.3f}"),
-            "Min. mean Jaccard": d.minimum_cluster_mean_jaccard.map(lambda x:f"{x:.3f}"),
-        }), "Two distinct profile sensitivity checks"))
-    for stem, frame, caption in compact:
-        target = compact_dir / f"{stem}.tex"
-        latex = frame.to_latex(index=False, escape=False, caption=f"{caption} ({STATUS}).",
-                               label=f"tab:{stem.replace('_','-')}")
-        # These compact summaries fit a sigconf column at the class font size.
-        latex = latex.replace("\\begin{table}", "\\begin{table}[!ht]\n\\centering", 1)
-        target.write_text("% Generated compact two-column ACM table.\n" + latex, encoding="utf-8")
-        written.append(target)
+    # The paper generator needs the complete saved analysis, whereas generic LaTeX
+    # export is also used on small partial fixtures in the test suite.
+    if (root / "prepared_data/analysis_matrix.parquet").exists():
+        from .paper_assets import generate_paper_assets
+        written.extend(generate_paper_assets(root, output))
     figures=[]
     for name,caption,label in [
         ("fig_cluster_diagnostics.png","Silhouette, balance, and country-level cluster diagnostics.","fig:cluster-diagnostics"),
@@ -333,7 +298,7 @@ def export_latex(root: Path, output: Path, decimals: int = 3) -> list[Path]:
         if (root/"rq3_provisional"/name).exists():
             figures.append("\\begin{figure}[htbp]\n\\centering\n"
                 f"\\includegraphics[width=0.98\\linewidth]{{rq3_provisional/{name}}}\n"
-                f"\\caption{{{caption} {STATUS}.}}\n\\label{{{label}}}\n\\end{{figure}}")
+                f"\\caption{{{caption}}}\n\\label{{{label}}}\n\\end{{figure}}")
     (output/"research_figures.tex").write_text(
         "% Add \\usepackage{graphicx} to the preamble. Paths assume research_outputs is the Overleaf project root.\n\n"
         +"\n\n".join(figures)+"\n",encoding="utf-8")

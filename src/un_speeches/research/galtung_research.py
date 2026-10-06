@@ -430,9 +430,10 @@ def rq1(cfg: dict[str, Any], data: dict[str, pd.DataFrame]) -> None:
     os.environ.setdefault("XDG_CACHE_HOME",str(outdir(cfg,"audit","font_cache")))
     import matplotlib.pyplot as plt
     plot=prev[~prev.dimension.eq("attribution")].copy(); plot["label"]=plot.code+" ("+plot.codebook_id+")"
-    fig,ax=plt.subplots(figsize=(10,8)); ax.barh(plot.label,plot.paragraph_prevalence,xerr=[plot.paragraph_prevalence-plot.cluster_boot_ci_low,plot.cluster_boot_ci_high-plot.paragraph_prevalence]); ax.set_xlabel("Positive / confirmed evaluable units"); ax.set_title(f"Galtung code prevalence ({STATUS})"); fig.tight_layout(); fig.savefig(rdir/"prevalence.png",dpi=180); plt.close(fig)
+    fig,ax=plt.subplots(figsize=(10,8)); ax.barh(plot.label,plot.paragraph_prevalence,color="#aec4e3",ecolor="#394453",xerr=[plot.paragraph_prevalence-plot.cluster_boot_ci_low,plot.cluster_boot_ci_high-plot.paragraph_prevalence]); ax.set_xlabel("Positive / confirmed evaluable units"); ax.set_title("Galtung code prevalence"); fig.tight_layout(); fig.savefig(rdir/"prevalence.png",dpi=180); plt.close(fig)
+    from matplotlib.colors import LinearSegmentedColormap
     core=[c for c in cols if "__attribution__" not in c]; corr=d[core].corr()
-    fig,ax=plt.subplots(figsize=(12,10)); im=ax.imshow(corr,vmin=-1,vmax=1,cmap="coolwarm"); ax.set_xticks(range(len(core)),[x.split("__")[-1] for x in core],rotation=90); ax.set_yticks(range(len(core)),[x.split("__")[-1] for x in core]); fig.colorbar(im,ax=ax,label="Phi on jointly evaluable units"); fig.tight_layout(); fig.savefig(rdir/"cooccurrence_phi.png",dpi=180); plt.close(fig)
+    fig,ax=plt.subplots(figsize=(12,10)); im=ax.imshow(corr,vmin=-1,vmax=1,cmap=LinearSegmentedColormap.from_list("pastel_phi",["#ebbeaa","#fbfaf8","#aec4e3"])); ax.set_xticks(range(len(core)),[x.split("__")[-1] for x in core],rotation=90); ax.set_yticks(range(len(core)),[x.split("__")[-1] for x in core]); fig.colorbar(im,ax=ax,label="Phi on jointly evaluable units"); fig.tight_layout(); fig.savefig(rdir/"cooccurrence_phi.png",dpi=180); plt.close(fig)
 
 
 def country_descriptives(cfg: dict[str, Any], data: dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -642,7 +643,7 @@ def rq3(cfg: dict[str, Any], data: dict[str, pd.DataFrame]) -> None:
     os.environ.setdefault("MPLCONFIGDIR",str(outdir(cfg,"audit","matplotlib_cache")))
     os.environ.setdefault("XDG_CACHE_HOME",str(outdir(cfg,"audit","font_cache")))
     import matplotlib.pyplot as plt
-    fig,ax=plt.subplots(figsize=(12,7)); dendrogram(link,labels=list(z.index),leaf_rotation=90,ax=ax); ax.set_title(f"Ward dendrogram ({STATUS})"); fig.tight_layout(); fig.savefig(rdir/"dendrogram.png",dpi=180); plt.close(fig)
+    fig,ax=plt.subplots(figsize=(12,7)); dendrogram(link,labels=list(z.index),leaf_rotation=90,ax=ax,link_color_func=lambda _: "#aec4e3"); ax.set_title("Ward dendrogram"); fig.tight_layout(); fig.savefig(rdir/"dendrogram.png",dpi=180); plt.close(fig)
     from un_speeches.research.research_outputs import cluster_diagnostic_figure, knn_similarity_graph
     cache=outdir(cfg,"audit","figure_cache")
     cluster_diagnostic_figure(rdir,cache)
