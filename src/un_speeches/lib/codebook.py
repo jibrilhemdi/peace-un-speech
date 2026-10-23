@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 import yaml
+from .identifiers import codebook_id as canonical_codebook_id, source_codebook_id
 
 NONE = "NONE"
 ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
@@ -636,6 +637,7 @@ def load_all(directory: Path) -> list[LoadResult]:
 
 def require_codebook(directory: Path, codebook_id: str) -> Codebook:
     """Load one codebook or die with the validation errors."""
+    codebook_id = canonical_codebook_id(codebook_id)
     path = directory / f"{codebook_id}.yaml"
     if not path.exists():
         available = ", ".join(sorted(p.stem for p in directory.glob("*.yaml"))) or "(none)"
@@ -649,6 +651,22 @@ def require_codebook(directory: Path, codebook_id: str) -> Codebook:
         )
     assert res.codebook is not None
     return res.codebook
+
+
+def historical_codebook(directory: Path, identifier: str) -> Codebook:
+    """Recover the unchanged instrument for continuing/auditing historical jobs.
+
+    This is deliberately separate from active analysis names. It keeps original
+    prompt bytes and hashes, so a label correction cannot invalidate old jobs.
+    """
+    source_id = source_codebook_id(identifier)
+    path = directory.parent / "archive/codebooks_before_identifier_v1" / f"{source_id}.yaml"
+    if path.exists():
+        result = load_codebook(path)
+        if not result.ok or result.codebook is None:
+            raise CodebookError(f"Invalid historical codebook: {path}: {result.errors}")
+        return result.codebook
+    return require_codebook(directory, identifier)
 
 
 # ======================================================================================

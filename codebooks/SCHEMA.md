@@ -140,7 +140,7 @@ proposed settlement is, how far a demand goes beyond a ceasefire, how zero-sum a
 Declare `scale: ordinal` and give every category a `value`:
 
 ```yaml
-- name: imperialism
+- name: relational
   scale: ordinal
   description: How the speaker distributes control over the settlement.
   required: true
@@ -335,7 +335,7 @@ structure. Typo fixes in a `label` do not require a bump.
 
 Bumping `version` invalidates cached annotations **for that codebook only**. Job rows are keyed
 `(unit_id, codebook_id, codebook_version, run_id)`, so `violence` v2 starts a fresh set of
-pending jobs while `relations` v1 is untouched and complete. Old rows are retained, never
+pending jobs while the historical Coupling (`relations`) v1 run is untouched and complete. Old rows are retained, never
 deleted — v1 and v2 sit side by side, which is what lets you measure how much a prompt revision
 moved the labels.
 

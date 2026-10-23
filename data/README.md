@@ -13,6 +13,7 @@ review material. Back up `raw/` and `db/` separately before cleaning or rebuildi
 | `pilots/` | Pilot annotation and adjudication sheets. | Preserve human edits; regenerated pilot files are not equivalent to completed adjudication. |
 | `gold/` | Human-validation sample draws and design information. | Preserve completed human coding and inclusion probabilities. |
 | `samples/` | Small manual spot-check extracts. | Working research material. |
+| `review_materials_identifier_v1/` | Corrected copies of existing gold, pilot, and spot-check materials. | Original files, human assessments, sample IDs and original-frame weights remain intact. |
 
 The current statistical window is **2023-10-07 through 2025-12-31**, with inclusion
 determined by the meeting agenda. The prepared research tables retain all source units

@@ -116,14 +116,16 @@ def main() -> int:
     args = ap.parse_args()
 
     cfg = Config.load(args.config)
-    store = Store(cfg.path_for("db"))
+    store = Store(cfg.path_for("db"), readonly=True)
     cb = cbmod.require_codebook(cfg.path_for("codebooks"), args.codebook)
+    from un_speeches.lib.identifiers import source_codebook_id, normalize_frame, mapping_manifest
+    source_id = source_codebook_id(cb.id)
     seed = args.seed if args.seed is not None else int(cfg.get("provider.seed") or 0)
 
     version = store.conn.execute(
         """SELECT MAX(codebook_version) FROM jobs
            WHERE codebook_id=? AND run_id=? AND status='ok'""",
-        (cb.id, args.run_id),
+        (source_id, args.run_id),
     ).fetchone()[0]
     if version is None:
         print(f"no completed annotations for {cb.id} run_id={args.run_id} — "
@@ -137,7 +139,7 @@ def main() -> int:
             """SELECT DISTINCT model FROM jobs
                WHERE codebook_id=? AND codebook_version=? AND run_id=? AND status='ok'
                  AND model IS NOT NULL""",
-            (cb.id, version, args.run_id),
+            (source_id, version, args.run_id),
         )
     )
     model_str = "+".join(models_used) or "unknown"
@@ -151,7 +153,7 @@ def main() -> int:
            WHERE j.codebook_id=? AND j.codebook_version=? AND j.run_id=? AND j.status='ok'
              AND u.para_is_procedural = 0
            ORDER BY u.unit_id""",
-        store.conn, params=(cb.id, version, args.run_id),
+        store.conn, params=(source_id, version, args.run_id),
     )
     if frame.empty:
         print("frame is empty", file=sys.stderr)
@@ -164,8 +166,9 @@ def main() -> int:
            FROM annotations
            WHERE codebook_id=? AND codebook_version=? AND run_id=?
            ORDER BY unit_id, annotation_index""",
-        store.conn, params=(cb.id, version, args.run_id),
+        store.conn, params=(source_id, version, args.run_id),
     )
+    ann = normalize_frame(ann)
 
     # Predicted label per dimension, as a sorted code set — the model's own output is a legal
     # stratifier precisely because pi is recorded.
@@ -255,6 +258,7 @@ def main() -> int:
     sample = pd.concat(picked, ignore_index=True) if picked else frame.iloc[0:0].copy()
     sample = sample.rename(columns={"_stratum": "stratum"})
     sample["codebook_id"] = cb.id
+    sample["source_codebook_id"] = source_id
     sample["codebook_version"] = version
     sample["run_id"] = args.run_id
     sample["sample_seed"] = seed
@@ -280,6 +284,8 @@ def main() -> int:
         wrote.append(csv_path)
 
     design = {
+        "identifier_mapping": mapping_manifest(),
+        "source_codebook_id": source_id,
         "codebook_id": cb.id,
         "codebook_version": int(version),
         "run_id": args.run_id,

@@ -27,6 +27,10 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 
+from un_speeches.lib.identifiers import (MAPPING_VERSION, normalize_config, normalize_frame,
+                                        feature_name, mapping_manifest)
+from .bfgs_update import rank_two_bfgs, UPDATE_VERSION, provenance as optimizer_provenance
+
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_CONFIG = ROOT / "config" / "research.yaml"
 STATUS = "PROVISIONAL / UNVALIDATED"
@@ -35,12 +39,15 @@ STATUS = "PROVISIONAL / UNVALIDATED"
 def load_config(path: str | Path = DEFAULT_CONFIG) -> dict[str, Any]:
     with Path(path).open(encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
+    cfg = normalize_config(cfg)
     cfg["_path"] = str(Path(path).resolve())
     return cfg
 
 
 def outdir(cfg: dict[str, Any], *parts: str) -> Path:
     p = ROOT / cfg["source"]["output"]
+    if parts and parts[0] == "validation":
+        parts = (cfg.get("validation", {}).get("directory", "validation"), *parts[1:])
     for part in parts:
         p /= part
     p.mkdir(parents=True, exist_ok=True)
@@ -55,6 +62,14 @@ def sha256(path: Path) -> str | None:
         for block in iter(lambda: f.read(1024 * 1024), b""):
             h.update(block)
     return h.hexdigest()
+
+
+def source_fingerprint(path: Path) -> str | None:
+    # A first read of a WAL-mode SQLite snapshot can create an empty sidecar.
+    # Missing and empty WAL both contain no transactions.
+    if path.name.endswith("-wal") and (not path.exists() or path.stat().st_size == 0):
+        return None
+    return sha256(path)
 
 
 def write_csv(df: pd.DataFrame, path: Path) -> None:
@@ -73,7 +88,7 @@ def read_sources(cfg: dict[str, Any]) -> dict[str, Any]:
     db = (ROOT / cfg["source"]["database"]).resolve()
     corpus_path = (ROOT / cfg["source"]["corpus"]).resolve()
     meeting_manifest_path = (ROOT / cfg["source"]["meeting_manifest"]).resolve()
-    before = {str(p): sha256(p) for p in (db, Path(str(db) + "-wal"), corpus_path, meeting_manifest_path)}
+    before = {str(p): source_fingerprint(p) for p in (db, Path(str(db) + "-wal"), corpus_path, meeting_manifest_path)}
     con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
     con.execute("BEGIN")
     try:
@@ -84,12 +99,14 @@ def read_sources(cfg: dict[str, Any]) -> dict[str, Any]:
     finally:
         con.rollback()
         con.close()
-    after = {str(p): sha256(p) for p in (db, Path(str(db) + "-wal"), corpus_path, meeting_manifest_path)}
+    after = {str(p): source_fingerprint(p) for p in (db, Path(str(db) + "-wal"), corpus_path, meeting_manifest_path)}
     if before != after:
         raise RuntimeError("Source database/corpus changed during extraction; rerun for a consistent snapshot")
     tables["corpus"] = pd.read_csv(corpus_path, low_memory=False)
     tables["meeting_manifest"] = pd.read_csv(meeting_manifest_path, low_memory=False)
     tables["fingerprints"] = before
+    for name in ("jobs", "annotations", "pilots"):
+        tables[name] = normalize_frame(tables[name])
     return tables
 
 
@@ -163,12 +180,26 @@ def codebook_specs(cfg: dict[str, Any]) -> tuple[dict[str, dict], list[dict]]:
             raise ValueError(f"configured dimension absent from codebooks: {dim}")
         for code in codes:
             if code != "NONE": expected.add((cb, dim, code))
-    if not expected.issubset(actual) or "coupling" in {x[0] for x in actual} | {x[1] for x in actual}:
+    if not expected.issubset(actual):
         raise ValueError("canonical Galtung identifiers do not match configuration")
     return specs, rows
 
 
 def prepare(cfg: dict[str, Any]) -> dict[str, pd.DataFrame]:
+    signature = analysis_signature(cfg)
+    base = ROOT / cfg["source"]["output"]
+    previous_manifest = base / "audit/snapshot_manifest.json"
+    previous = json.loads(previous_manifest.read_text()) if previous_manifest.exists() else {}
+    if previous.get("analysis_signature") != signature:
+        generated = [base / name for name in ("rq1_provisional", "rq2_provisional", "rq3_provisional", "latex", "reports")]
+        if any(p.exists() for p in generated):
+            archive = base / "incompatible_cache" / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+            archive.mkdir(parents=True)
+            for path in generated:
+                if path.exists():
+                    path.rename(archive / path.name)
+            (archive / "invalidation.json").write_text(json.dumps({"old_signature": previous.get("analysis_signature"),
+                "new_signature": signature, "reason": "source, codebook naming, configuration or population changed"}, indent=2))
     src = read_sources(cfg)
     specs, dictionary = codebook_specs(cfg)
     units, jobs, ann, corpus = src["units"].copy(), src["jobs"].copy(), src["annotations"].copy(), src["corpus"].copy()
@@ -188,6 +219,9 @@ def prepare(cfg: dict[str, Any]) -> dict[str, pd.DataFrame]:
     paragraphs["forum"] = np.select([paragraphs.doc_symbol.str.startswith("S/", na=False),
                                       paragraphs.doc_symbol.str.startswith("A/", na=False)], ["SC", "GA"], default="UNKNOWN")
     paragraphs["meeting_id"] = paragraphs.doc_symbol
+    paragraphs["is_observer"] = paragraphs.country.isin(cfg["population"]["observer_cases"])
+    paragraphs["institutional_status"] = np.where(paragraphs.is_observer, "non-member observer state",
+        np.where(paragraphs.role.eq("representative") & paragraphs.country.notna(), "UN member state", "official/other"))
     paragraphs["text_missing"] = paragraphs.text.isna() | paragraphs.text.astype(str).str.strip().eq("")
     paragraphs["date_invalid"] = paragraphs.date.isna()
     paragraphs["speaker_ambiguous"] = paragraphs.ambassador_name.isna() | paragraphs.ambassador_name.astype(str).str.strip().eq("")
@@ -252,11 +286,14 @@ def prepare(cfg: dict[str, Any]) -> dict[str, pd.DataFrame]:
     write_csv(pd.DataFrame(selection_rows), outdir(cfg, "audit") / "selected_runs.csv")
     manifest = {"created_at": datetime.now(timezone.utc).isoformat(), "validation_status": "pending",
                 "analysis_status": STATUS, "config": cfg["_path"], "source_fingerprints": src["fingerprints"],
+                "identifier_mapping": mapping_manifest(), "analysis_signature": signature,
+                "population": cfg["population"],
+                "optimizer_computation": optimizer_provenance(),
                 "rows": {"paragraphs": len(paragraphs), "evidence": len(evidence), "deduplicated": len(dedup),
                          "evaluation_status": len(evaluations)},
                 "software": {"python": sys.version, "platform": platform.platform(), "pandas": pd.__version__,
                              "numpy": np.__version__}}
-    (outdir(cfg, "audit") / "snapshot_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    (outdir(cfg, "audit") / "snapshot_manifest.json").write_text(json.dumps(manifest, indent=2, default=str), encoding="utf-8")
     return {"paragraphs": paragraphs, "evidence": evidence, "dedup": dedup,
             "evaluations": evaluations, "matrix": matrix, "dictionary": pd.DataFrame(dictionary)}
 
@@ -266,11 +303,27 @@ def load_prepared(cfg: dict[str, Any]) -> dict[str, pd.DataFrame]:
     needed = {"paragraphs": "paragraphs.parquet", "evidence": "annotations_evidence.parquet",
               "dedup": "annotations_long_deduplicated.parquet", "evaluations": "evaluation_status.parquet",
               "matrix": "analysis_matrix.parquet"}
-    if not all((p / f).exists() for f in needed.values()):
+    manifest_path = outdir(cfg, "audit") / "snapshot_manifest.json"
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+    if (not all((p / f).exists() for f in needed.values())
+            or manifest.get("analysis_signature") != analysis_signature(cfg)):
         return prepare(cfg)
     out = {k: pd.read_parquet(p / f) for k, f in needed.items()}
     out["dictionary"] = pd.read_csv(outdir(cfg, "audit") / "data_dictionary.csv")
     return out
+
+
+def analysis_signature(cfg: dict[str, Any]) -> str:
+    """Reject prepared caches from another naming/population/source configuration."""
+    relevant = {k: cfg[k] for k in ("selected_runs", "dimensions", "core_profile_dimensions", "population", "thresholds", "analysis")}
+    relevant["mapping_version"] = MAPPING_VERSION
+    relevant["optimizer_computation"] = UPDATE_VERSION
+    relevant["inputs"] = {k: sha256(ROOT / cfg["source"][k]) for k in ("database", "corpus", "meeting_manifest")}
+    wal = source_fingerprint(Path(str(ROOT / cfg["source"]["database"]) + "-wal"))
+    if wal is not None:
+        relevant["wal"] = wal
+    relevant["codebooks"] = {cb: sha256(ROOT / cfg["source"]["codebooks"] / f"{cb}.yaml") for cb in cfg["selected_runs"]}
+    return hashlib.sha256(json.dumps(relevant, sort_keys=True, default=str).encode()).hexdigest()
 
 
 def population(matrix: pd.DataFrame, cfg: dict[str, Any], forum: str | None = None,
@@ -278,9 +331,12 @@ def population(matrix: pd.DataFrame, cfg: dict[str, Any], forum: str | None = No
     d = matrix[(matrix.role == cfg["population"]["role"]) & matrix.para_is_procedural.eq(0)
                & matrix.in_scope.eq(True)].copy()
     if not include_observer:
-        d = d[~d.country.isin(cfg["population"]["observer_cases"])]
+        excluded = set(cfg["population"]["observer_cases"]) - set(cfg["population"].get("included_observers", []))
+        d = d[~d.country.isin(excluded)]
     if forum:
         d = d[d.forum.eq(forum)]
+    else:
+        d = d[d.forum.isin(cfg["population"]["rq1_forums"])]
     return d
 
 
@@ -342,6 +398,7 @@ def audit(cfg: dict[str, Any], data: dict[str, pd.DataFrame]) -> None:
             if a < b: jr.append({"dimension_a": a, "dimension_b": b, "joint_successful_units": int((joint[a] & joint[b]).sum())})
     write_csv(pd.DataFrame(jr), adir / "joint_coverage.csv")
     main = population(data["matrix"], cfg, cfg["population"]["rq2_rq3_forum"])
+    population_label = "UN member states and Palestine" if "Palestine" in cfg["population"].get("included_observers", []) else "UN member states"
     core_cbs = list(cfg["core_profile_dimensions"])
     eval_ok = e[e.evaluation_status.eq("successful_complete")].pivot_table(index="unit_id", columns="codebook_id", values="dimension", aggfunc="size", fill_value=0)
     rows = []
@@ -357,6 +414,22 @@ def audit(cfg: dict[str, Any], data: dict[str, pd.DataFrame]) -> None:
             row[f"included_{tier}"] = not reasons; row[f"exclusion_reasons_{tier}"] = "|".join(reasons)
         rows.append(row)
     write_csv(pd.DataFrame(rows), adir / "country_eligibility.csv")
+    full_main = population(data["matrix"], cfg)
+    summaries = []
+    for label, frame in (("rq1", full_main), ("rq2_rq3_sc_before_thresholds", main)):
+        summaries.append({"population": label, "paragraphs": len(frame), "speeches": frame.speech_id.nunique(),
+                          "countries": frame.country.nunique(), "palestine_paragraphs": int(frame.country.eq("Palestine").sum()),
+                          "palestine_speeches": frame.loc[frame.country.eq("Palestine"), "speech_id"].nunique()})
+    write_csv(pd.DataFrame(summaries), adir / "population_summary.csv")
+    palestine_ids = set(full_main.loc[full_main.country.eq("Palestine"), "unit_id"])
+    palestine_eval = e[e.unit_id.isin(palestine_ids)]
+    write_csv(palestine_eval.groupby(["codebook_id", "dimension", "evaluation_status"])
+              .size().rename("paragraphs").reset_index(), adir / "palestine_coverage.csv")
+    palestine_source = p[p.country.eq("Palestine")].copy()
+    palestine_source["in_main_analysis"] = palestine_source.unit_id.isin(palestine_ids)
+    write_csv(palestine_source[["unit_id", "speech_id", "forum", "is_observer", "is_party",
+                               "institutional_status", "in_scope", "para_is_procedural", "in_main_analysis",
+                               "scope_exclusion_reason"]], adir / "palestine_source_population.csv")
     fallback=ROOT/"data/exports/db/csv/annotations_with_text.csv"
     if fallback.exists():
         exp=pd.read_csv(fallback,low_memory=False)
@@ -365,7 +438,7 @@ def audit(cfg: dict[str, Any], data: dict[str, pd.DataFrame]) -> None:
              {"source":str(fallback.relative_to(ROOT)),"rows":len(exp),"unique_units":exp.unit_id.nunique() if "unit_id" in exp else np.nan,
               "selected":False,"reason":"fallback export lacks the selected consistent current run family; not merged"}]
         write_csv(pd.DataFrame(rec),adir/"source_reconciliation.csv")
-    report = f"""# Source, schema, and dependency audit\n\nStatus: **{STATUS}**. Validation status: **pending**.\n\nThe selected source is the configured SQLite job store, read in one read-only transaction. It was preferred over exports because it contains explicit job status, run/version, prompt hash, model, raw response, and every eligible unit. The extended corpus was joined only to recover verified speech/meeting metadata. Existing exports were not merged into the selected data.\n\n`jobs.status = ok` denotes a successfully parsed complete response for a unit. Required dimensions are therefore evaluable even when the response contains an empty annotation array. The conditional violence `attribution` dimension is evaluable only where a violence annotation exists; elsewhere its outcomes are NA, not zero. Failed, missing, and unknown jobs remain NA. Repeated evidence was collapsed only within unit + selected run/version + dimension + value.\n\nThe date window is {cfg['population']['start_date']} through {cfg['population']['end_date']}, and the meeting agenda must name Palestine. The collected manifest contains {eligible_count} eligible meetings; {observed_count} are present in the existing annotated snapshot, leaving {eligible_count-observed_count} eligible but unannotated meetings. `meeting_scope.csv` records every collected meeting and the exclusion or missing-annotation reason. Results describe the annotated subset, not all eligible UN meetings.\n\nThe main population is `role=representative`; Palestine is retained only as a separate observer/party case, Israel remains in the member-state analysis, and UN officials are excluded. RQ2/RQ3 use verified `S/` document symbols (Security Council). Country eligibility is recalculated in `country_eligibility.csv`.\n\nDependencies: Python mixed modelling uses statsmodels' binomial Bayesian mixed GLM because no supported R mixed-model package is installed. Source data and database schemas are never modified. The ignored external kappa CSV and prior kappa values are not dependencies.\n"""
+    report = f"""# Source, schema, and dependency audit\n\nStatus: **{STATUS}**. Validation status: **pending**.\n\nThe selected source is the configured SQLite job store, read in one read-only transaction. It was preferred over exports because it contains explicit job status, run/version, prompt hash, model, raw response, and every eligible unit. The extended corpus was joined only to recover verified speech/meeting metadata. Existing exports were not merged into the selected data.\n\n`jobs.status = ok` denotes a successfully parsed complete response for a unit. Required dimensions are therefore evaluable even when the response contains an empty annotation array. The conditional violence `attribution` dimension is evaluable only where a violence annotation exists; elsewhere its outcomes are NA, not zero. Failed, missing, and unknown jobs remain NA. Repeated evidence was collapsed only within unit + selected run/version + dimension + value.\n\nThe date window is {cfg['population']['start_date']} through {cfg['population']['end_date']}, and the meeting agenda must name Palestine. The collected manifest contains {eligible_count} eligible meetings; {observed_count} are present in the existing annotated snapshot, leaving {eligible_count-observed_count} eligible but unannotated meetings. `meeting_scope.csv` records every collected meeting and the exclusion or missing-annotation reason. Results describe the annotated subset, not all eligible UN meetings.\n\nThe main population is `role=representative`; {population_label} are included on equal analytical criteria; Palestine retains its non-member observer and conflict-party status. Israel remains included; the Holy See and UN officials remain excluded. RQ2/RQ3 use verified `S/` document symbols (Security Council). Country eligibility is recalculated in `country_eligibility.csv`.\n\nDependencies: Python mixed modelling uses statsmodels' binomial Bayesian mixed GLM because no supported R mixed-model package is installed. Source data and database schemas are never modified. The ignored external kappa CSV and prior kappa values are not dependencies.\n"""
     (adir / "audit_report.md").write_text(report, encoding="utf-8")
 
 
@@ -397,7 +470,7 @@ def rq1(cfg: dict[str, Any], data: dict[str, pd.DataFrame]) -> None:
                      "evaluable_units": int(y.notna().sum()), "missing_units": int(y.isna().sum()),
                      "paragraph_prevalence": y.mean(), "cluster_boot_ci_low": lo, "cluster_boot_ci_high": hi,
                      "speech_weighted_mean": speech_props.mean(), "speeches_evaluable": speech_props.notna().sum(),
-                     "scope": "member-state representative paragraphs; verified SC+GA forums", "status": STATUS})
+                     "scope": ("UN member states and Palestine" if "Palestine" in cfg["population"].get("included_observers", []) else "UN member states") + " representative paragraphs; verified SC+GA forums", "status": STATUS})
     prev = pd.DataFrame(rows); rdir = outdir(cfg, "rq1_provisional"); write_csv(prev, rdir / "prevalence.csv")
     pairs = []
     for i, a in enumerate(cols):
@@ -413,7 +486,6 @@ def rq1(cfg: dict[str, Any], data: dict[str, pd.DataFrame]) -> None:
     write_csv(pd.DataFrame(pairs), rdir / "cooccurrence.csv")
     # Reproducible evidence-review cases: high confidence positives, diversified by country/date.
     ev = data["evidence"].merge(d[["unit_id","speech_id","country","meeting_date","text","role"]], on="unit_id")
-    ev = ev[(ev.role.eq("representative")) & ~ev.country.isin(cfg["population"]["observer_cases"])]
     ev = ev.drop_duplicates(["codebook_id","dimension","value","country"])
     picked=[]
     for _,g in ev.groupby(["codebook_id","dimension","value"]):
@@ -481,12 +553,17 @@ def fit_mixed_model(frame: pd.DataFrame, outcome: str, cfg: dict[str, Any], vari
              "quarter_time":"C(country) + C(quarter) + log_word_count"}[variant]
         model=BinomialBayesMixedGLM.from_formula(f"{outcome} ~ {rhs}",
               {"speech":"0 + C(speech_id)","meeting":"0 + C(meeting_id)"},d)
-        result=model.fit_vb(verbose=False, minim_opts={"maxiter":500})
+        # Keep the declared seed and legacy feature identity stable across this naming correction.
+        # statsmodels otherwise uses unseeded global NumPy initialization.
+        seed_identity = feature_name(outcome, reverse=True)
+        np.random.seed(cfg["analysis"]["seed"] + sum(map(ord,seed_identity)) + sum(map(ord,variant)))
+        print(f"Fitting {outcome} ({variant}): {len(d)} paragraphs, {d.country.nunique()} countries", flush=True)
+        result=model.fit_vb(verbose=False, fit_method=rank_two_bfgs, minim_opts={"maxiter":500})
         fe=np.asarray(result.fe_mean); sd=np.asarray(result.fe_sd); names=model.exog_names
         # Same reference time/length distribution for every country; random effects fixed to zero.
         import patsy
         design_info=model.data.design_info
-        rng=np.random.default_rng(cfg["analysis"]["seed"] + sum(map(ord,outcome)))
+        rng=np.random.default_rng(cfg["analysis"]["seed"] + sum(map(ord,seed_identity)))
         draws=rng.normal(fe,sd,size=(cfg["analysis"]["posterior_draws"],len(fe)))
         preds=[]; draw_rows=[]
         for country in sorted(d.country.unique()):
@@ -506,6 +583,7 @@ def fit_mixed_model(frame: pd.DataFrame, outcome: str, cfg: dict[str, Any], vari
                     country_wald=wald,country_df=len(country_ix),country_p=pval,
                     method="statsmodels BinomialBayesMixedGLM mean-field variational Bayes; speech+meeting random intercepts; country omnibus is diagonal-posterior Wald approximation",
                     prediction="standardized over common observed time/length distribution; random effects fixed at zero (not marginal population-average)")
+        print(f"Finished {outcome} ({variant}): converged={meta['converged']}", flush=True)
         return pd.DataFrame(preds),meta,(pd.concat(draw_rows,ignore_index=True) if draw_rows else pd.DataFrame())
     except Exception as exc:
         meta.update(status="failed",reason=f"{type(exc).__name__}: {exc}"); return pd.DataFrame(),meta,pd.DataFrame()
@@ -544,7 +622,7 @@ def rq2(cfg: dict[str, Any], data: dict[str, pd.DataFrame], max_models: int | No
                 x=float(ir.adjusted_probability_re0); ref=others.adjusted_probability_re0.mean()
                 sei=(ir.ci_high-ir.ci_low)/(2*1.959963984540054); seo=np.sqrt(np.square((others.ci_high-others.ci_low)/(2*1.959963984540054)).sum())/len(others)
                 se=np.sqrt(sei**2+seo**2); diff=x-ref; z=diff/se if se else np.nan
-                cons.append({"feature":feat,"contrast":"Israel minus mean of other eligible states","difference":diff,
+                cons.append({"feature":feat,"contrast":"Israel minus mean of other eligible countries","difference":diff,
                              "ci_low":diff-1.959963984540054*se,"ci_high":diff+1.959963984540054*se,
                              "p_approx":2*norm.sf(abs(z)) if pd.notna(z) else np.nan,
                              "interval_note":"approximate propagation from mean-field VB intervals; cross-country posterior covariance unavailable",
@@ -625,7 +703,7 @@ def rq3(cfg: dict[str, Any], data: dict[str, pd.DataFrame]) -> None:
         chosen.append({"country":g.iloc[0].country,"profile_id":pid,"case_role":"representative_nearest_centroid"})
         chosen.append({"country":g.iloc[-1].country,"profile_id":pid,"case_role":"deviant_farthest_centroid"})
     chosen=pd.DataFrame(chosen)
-    scoped = data["paragraphs"].loc[data["paragraphs"].in_scope.eq(True),
+    scoped = population(data["matrix"], cfg, cfg["population"]["rq2_rq3_forum"])[
                                      ["unit_id","speech_id","country","meeting_date","text"]]
     ev=data["evidence"].merge(scoped,on="unit_id",how="inner")
     ev=ev.merge(chosen,on="country",how="inner").sort_values(["profile_id","case_role","codebook_id","confidence"],ascending=[True,True,True,False])

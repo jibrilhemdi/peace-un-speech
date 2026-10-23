@@ -1,0 +1,17 @@
+# Tested direct dependencies for the identifier/Palestine migration.
+# Python 3.14.7
+pymupdf==1.28.0
+pandas==3.0.5
+pyarrow==25.0.0
+httpx==0.28.1
+PyYAML==6.0.3
+numpy==2.5.1
+xlsxwriter==3.2.9
+openpyxl==3.1.5
+scipy==1.18.0
+scikit-learn==1.9.0
+prince==0.20.1
+statsmodels==0.14.6
+matplotlib==3.11.1
+networkx==3.6.1
+python-louvain==0.16

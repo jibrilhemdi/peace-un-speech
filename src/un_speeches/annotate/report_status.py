@@ -20,6 +20,7 @@ from pathlib import Path
 from un_speeches.lib import codebook as cbmod  # noqa: E402
 from un_speeches.lib.config import Config, model_tag  # noqa: E402
 from un_speeches.lib.db import Store, next_reset, quota_day  # noqa: E402
+from un_speeches.lib.identifiers import codebook_id, dimension_id
 
 HIGH_PREVALENCE = 0.50
 LOW_PREVALENCE = 0.01
@@ -44,7 +45,7 @@ def main() -> int:
         print(f"no database at {db_path} — run: python -m un_speeches.annotate.segment_units", file=sys.stderr)
         return 1
 
-    store = Store(db_path)
+    store = Store(db_path, readonly=True)
     reset_hour = int(cfg.get("limits.quota_reset_hour_utc", 0))
     budget = int(cfg.get("limits.daily_budget", 50000))
     day = quota_day(reset_hour)
@@ -75,12 +76,12 @@ def main() -> int:
     cb_dir = cfg.path_for("codebooks")
     runs = store.codebook_runs()
     if args.codebook:
-        runs = [r for r in runs if r[0] == args.codebook]
+        runs = [r for r in runs if codebook_id(r[0]) == codebook_id(args.codebook)]
     if args.run_id:
         runs = [r for r in runs if r[2] == args.run_id]
 
     known = sorted(p.stem for p in cb_dir.glob("*.yaml"))
-    started = {r[0] for r in runs}
+    started = {codebook_id(r[0]) for r in runs}
     unstarted = [c for c in known if c not in started and (not args.codebook or c == args.codebook)]
 
     warnings: list[str] = []
@@ -88,10 +89,10 @@ def main() -> int:
     for cb_id, version, run_id in runs:
         print()
         print("=" * 78)
-        print(f"{cb_id} v{version}   run_id={run_id}")
+        print(f"{codebook_id(cb_id)} v{version}   run_id={run_id} (source identifier: {cb_id})")
 
         try:
-            cb = cbmod.require_codebook(cb_dir, cb_id)
+            cb = cbmod.historical_codebook(cb_dir, cb_id)
             current_version = cb.version
             current_hash = cbmod.prefix_hash(cb)
         except cbmod.CodebookError:
@@ -187,7 +188,7 @@ def main() -> int:
             print()
             print(f"  Per-code prevalence among {ok:,} completed units")
             for dim in cb.dimensions:
-                print(f"    {dim.name}")
+                print(f"    {dimension_id(dim.name)}")
                 rows = {
                     r[0]: int(r[1])
                     for r in store.conn.execute(

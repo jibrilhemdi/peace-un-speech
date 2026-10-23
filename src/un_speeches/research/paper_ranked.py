@@ -40,8 +40,8 @@ def generate_ranked_rq1(
                            ascending=[False, True], kind="stable")
               .reset_index(drop=True))
     ranked.insert(0, "rank", np.arange(1, len(ranked) + 1))
-    if len(ranked) != 710 or not ranked.evaluable_paragraphs.eq(len(data)).all():
-        raise ValueError("RQ1 triplet candidate set or evaluation denominator changed")
+    if len(ranked) != 710:
+        raise ValueError("RQ1 triplet candidate set changed")
     audit = paper / "rq1_triplet_rankings.csv"
     ranked.to_csv(audit, index=False)
     top = ranked.head(10)
@@ -55,7 +55,7 @@ def generate_ranked_rq1(
     table = paper / "rq1_configurations.tex"
     lines = ["% Generated from exhaustive scoped triplet ranking; do not hand-edit.",
              r"\begin{table*}[!tbp]", r"\centering\small",
-             r"\caption{Ten most frequent cross-block three-code configurations. Each share uses 14,463 evaluable paragraphs. Configurations overlap; shares do not sum to 100\%. Meetings counts distinct meeting records.}",
+             rf"\caption{{Ten most frequent cross-block three-code configurations. Shares use jointly evaluable paragraphs (up to {len(data):,}); exact denominators are saved with the ranking. Configurations overlap; shares do not sum to 100\%. Meetings counts distinct meeting records.}}",
              r"\label{tab:rq1-configurations}",
              r"\begin{tabularx}{\textwidth}{@{}rXrrr@{}}", r"\toprule",
              "Rank & Configuration & Paragraphs & Share & Meetings \\\\",
@@ -96,8 +96,36 @@ def generate_ranked_rq1(
         return re.sub(r"[^a-z0-9]+", "", str(value).lower())
 
     evidence = pd.read_parquet(root / "prepared_data/annotations_evidence.parquet")
-    if [name for name, _, _ in excerpts] != top.configuration.tolist():
-        raise ValueError("Locked appendix excerpts no longer match the ranked top ten")
+    # Reuse verified passages by configuration, independently of their historical rank.
+    # New configurations receive a deterministic, PDF-checked evidence excerpt.
+    from .galtung_research import ROOT
+    existing = {name: (unit, quote) for name, unit, quote in excerpts}
+    refreshed = []
+    for name in top.configuration:
+        if name in existing:
+            refreshed.append((name, *existing[name]))
+            continue
+        codes = name.split("+")
+        candidates = data[data[[feature(c, data.columns) for c in codes]].eq(1).all(axis=1)].sort_values("unit_id")
+        found = None
+        for row in candidates.itertuples():
+            ev = evidence[evidence.unit_id.eq(row.unit_id) & evidence.evidence_verified.eq(1)]
+            if not set(codes).issubset(set(ev.value)):
+                continue
+            source = Path(str(row.source_pdf))
+            pdf = source if source.is_absolute() else ROOT / (source if source.parts[0] == "data" else Path("data/raw") / source)
+            with fitz.open(pdf) as document:
+                text = normalize(" ".join(page.get_text() for page in document))
+            for quote in ev.loc[ev.value.eq(codes[0]), "evidence"]:
+                if isinstance(quote, str) and normalize(quote) and normalize(quote) in normalize(row.text) and normalize(quote) in text:
+                    found = (name, row.unit_id, quote)
+                    break
+            if found:
+                break
+        if found is None:
+            raise ValueError(f"No PDF-verified excerpt for {name}")
+        refreshed.append(found)
+    excerpts = refreshed
     provenance, appendix_rows = [], []
     for rank, (name, unit_id, quote) in enumerate(excerpts, start=1):
         match = data[data.unit_id.eq(unit_id)]
@@ -115,9 +143,9 @@ def generate_ranked_rq1(
         if source.is_absolute():
             pdf = source
         elif source.parts[0] == "data":
-            pdf = root.parent / source
+            pdf = ROOT / source
         else:
-            pdf = root.parent / "data/raw" / source
+            pdf = ROOT / "data/raw" / source
         if not pdf.exists():
             raise FileNotFoundError(pdf)
         with fitz.open(pdf) as document:
@@ -128,7 +156,7 @@ def generate_ranked_rq1(
             "rank": rank, "configuration": name, "unit_id": unit_id,
             "country": row.country, "date": pd.Timestamp(row.date).date().isoformat(),
             "doc_symbol": row.doc_symbol,
-            "source_pdf": str(pdf.relative_to(root.parent)),
+            "source_pdf": str(pdf.relative_to(ROOT)),
             "source_pdf_sha256": hashlib.sha256(pdf.read_bytes()).hexdigest(),
             "excerpt": quote, "verified_codes": codes,
             "verification": "all three selected annotation evidence rows verified; normalized exact excerpt substring in scoped paragraph and source PDF",

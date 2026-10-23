@@ -1,14 +1,20 @@
 # Constructing Peace in UN Discourse on the Palestine Question
 
-This project studies how UN member states describe peace on the Palestine
+This project studies how UN member states and Palestine describe peace on the Palestine
 question, using five Galtungian codebooks and LLM-assisted paragraph annotation.
 It examines the shared repertoire, differences between states, and similarities
 between their overall discourse profiles.
 
 The study covers **7 October 2023–31 December 2025**, selecting meeting records
 whose agendas name Palestine. The analyzed subset contains **93 of 112 eligible
-records**, with **14,463 paragraphs from 1,751 member-state speeches**.
+records**, with **15,587 paragraphs from 1,826 representative speeches**.
 Country comparisons use the Security Council subset.
+Palestine retains its non-member observer and conflict-party status.
+
+The active construct names are **Coupling** (`coupling` / `coupling_type`) and
+**Relational** (`relational` / `relational`). Historical annotations keep their
+original identifiers and prompt provenance. See the [migration guide](docs/IDENTIFIER_MIGRATION.md)
+for checks, reproduction, backup locations, and rollback commands.
 
 ## Set up
 

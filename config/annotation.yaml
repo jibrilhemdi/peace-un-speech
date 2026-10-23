@@ -186,7 +186,7 @@ segmentation:
 provider:
   base_url: https://openrouter.ai/api/v1
   # Switched 2026-08-07: inclusionai/ling-3.0-flash:free was withdrawn from the catalogue.
-  # Codebooks violence / relations / imperialism / positive_negative and the first 1,296
+  # Codebooks violence / Coupling (stored as relations) / Relational (stored as imperialism) / positive_negative and the first 1,296
   # speeches of transcend were annotated with the old model. The model used is recorded on
   # every job row and carried into every export, so runs from the two models stay separable.
   model: poolside/laguna-s-2.1:free

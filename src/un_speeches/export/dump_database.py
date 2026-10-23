@@ -6,7 +6,7 @@
     python -m un_speeches.export.dump_database --formats csv --with-responses
 
 Writes into data/exports/db/:
-  csv/<table>.csv          one file per table in the database, verbatim
+  csv/<table>.csv          one view per source table, with corrected identifiers and source provenance
   excel/annotations_db.xlsx  the same tables, one sheet each
 
 and one derived sheet that is not in the database at all:
@@ -15,8 +15,8 @@ and one derived sheet that is not in the database at all:
                            and its confidence
 
 That derived sheet is the one to open when the question is "what did the model actually say
-about this paragraph". The verbatim dumps are for auditing and for re-running counts outside
-Python.
+about this paragraph". These views retain source identifiers for auditing and counts outside
+Python; raw responses and prompt/request hashes remain unchanged.
 
 Two columns are dropped by default because they are machine plumbing, not data, and together
 they are most of the file size: jobs.response_json (the raw model output, ~95 MB) and
@@ -37,6 +37,7 @@ import pandas as pd
 
 
 from un_speeches.lib.config import Config  # noqa: E402
+from un_speeches.lib.identifiers import normalize_frame
 
 # Every table in the schema, in the order a reader would want to meet them.
 TABLES = ["units", "annotations", "jobs", "pilots", "quota", "provider_caps"]
@@ -82,7 +83,7 @@ def read_table(conn: sqlite3.Connection, table: str, with_responses: bool) -> pd
     df = pd.read_sql_query(f"SELECT * FROM {table}", conn)  # noqa: S608 — table is from TABLES
     if table == "jobs" and not with_responses:
         df = df.drop(columns=[c for c in HEAVY_JOB_COLS if c in df.columns])
-    return df
+    return normalize_frame(df)
 
 
 def write_csvs(tables: dict[str, pd.DataFrame], out_dir: Path) -> list[Path]:
@@ -183,7 +184,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         readable = None
         if not args.no_readable and "annotations" in tables and "units" in present:
-            readable = pd.read_sql_query(READABLE_SQL, conn, params=(args.run_id,))
+            readable = normalize_frame(pd.read_sql_query(READABLE_SQL, conn, params=(args.run_id,)))
             readable["evidence_verified"] = readable.evidence_verified.astype(bool)
             if readable.empty:
                 print(f"note: no annotations for run_id '{args.run_id}' — "

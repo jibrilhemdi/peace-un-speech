@@ -19,15 +19,17 @@
 % block per author; include actual ORCID identifiers where available.
 % Funding and acknowledgments belong in an acks environment after review.
 
+\input{../research_outputs/latex/paper/paper_values.tex}
+
 \begin{document}
 \begin{abstract}
-How do UN member states describe peace on the Palestine question, and where
-do their emphases differ? We examine 14,463 substantive paragraphs from
-1,751 speeches in 93 annotated meeting records between October 2023 and
+How do UN member states and Palestine describe peace on the Palestine question, and where
+do their emphases differ? We examine \MainParagraphs{} substantive paragraphs from
+\MainSpeeches{} speeches in 93 annotated meeting records between October 2023 and
 December 2025. Five Galtungian codebooks guide large language model
-annotation of peace, violence, relations, domination, and conflict
+annotation of peace, violence, Coupling, Relational, and conflict
 transformation. Descriptive analysis identifies common codes and their
-combinations; mixed models compare 26 eligible states in the Security
+combinations; mixed models compare \EligibleCountries{} eligible countries in the Security
 Council; principal component analysis maps their adjusted profiles.
 Direct and structural violence are the most frequent codes. The leading
 three-code combination links structural justice, cooperative relations,
@@ -75,9 +77,9 @@ feature; a \emph{configuration} combines codes within a paragraph; a
 These distinctions connect the following questions to the analyses:
 \begin{enumerate}
   \item \textbf{RQ1: How is peace constructed?} Which Galtungian dimensions
-  of peace, violence, relations, domination, and conflict transformation
+  of peace, violence, Coupling, Relational, and conflict transformation
   appear, and which recur together?
-  \item \textbf{RQ2: How does emphasis vary across member states?} How do
+  \item \textbf{RQ2: How does emphasis vary across UN member states and Palestine?} How do
   code probabilities differ when states are compared over a common
   distribution of meeting months and paragraph lengths?
   \item \textbf{RQ3: Which states have similar or contrasting profiles?}
@@ -111,19 +113,23 @@ runs; the other 19 are mostly General Assembly records. This is an
 annotated subset rather than complete coverage of the eligible records.
 We split substantive turns at paragraph breaks, retain paragraphs of at
 least 15 words, and exclude rule-flagged procedural paragraphs from the
-analysis. The main population includes member-state representatives,
-including Israel. UN officials and observers, including Palestine, are
-excluded from this state comparison. RQ1 combines Security Council and
-General Assembly records: 14,463 paragraphs in 1,751 speeches.
-RQ2--RQ3 use the Security Council subset of 14,070 paragraphs before
+analysis. The main population includes representatives of UN member states and
+Palestine, including Israel. Palestine remains a non-member observer state
+and conflict party; institutional status does not determine analytical
+inclusion. The Holy See, UN officials, and procedural paragraphs retain
+their existing exclusions. RQ1 combines Security Council and
+General Assembly records: \MainParagraphs{} paragraphs in \MainSpeeches{} speeches.
+RQ2--RQ3 use the Security Council subset of \SCParagraphs{} paragraphs before
 country eligibility thresholds. These choices define whose discourse
 is represented; they do not assess the standing of excluded speakers.
 
 \subsection{LLM Annotation and Measurement}
 Five fixed codebooks operationalize 21 core codes in five theory blocks:
-peace conception, violence, relations, power symmetry, and conflict
-transformation. We use version 1 for peace, violence, imperialism, and
-transcend, and version 2 for relations. The short labels in the displays
+peace conception, violence, Coupling, Relational, and conflict
+transformation. We use version 1 for peace, violence, Relational, and
+transcend, and version 2 for Coupling. These are corrected display names:
+the original stored identifiers and prompt hashes remain in provenance;
+no historical annotation was rerun or reassigned. The short labels in the displays
 summarize codebook categories: for example, structural justice (PN3)
 represents predominantly positive peace, and leaning mutual gain (T3)
 represents a positive-sum orientation. They are textual coding categories,
@@ -144,7 +150,7 @@ support traceability; they do not establish the correctness of a code.
 Repeated evidence for the same paragraph, run, dimension, and code is counted
 once. A completed job without a code contributes zero; absent, failed,
 or incomplete jobs remain missing. Prevalence uses only evaluable paragraphs;
-all 14,463 RQ1 paragraphs are evaluable for the core codes in the selected
+all \MainParagraphs{} RQ1 paragraphs are evaluable for the core codes in the selected
 runs. Violence actor attribution has a conditional denominator and remains
 supplementary. The statistical analysis reads the annotation store without
 altering or rerunning its judgments.
@@ -162,8 +168,10 @@ will not be converted to absence. Political identity may remain apparent
 from the text, so blinding concerns model output rather than speaker identity.
 
 For each codebook, the prepared design contains 100 randomly sampled tasks
-and 50 purposive diagnostic tasks: 750 tasks over 730 distinct paragraphs
-per reviewer. The diagnostic set targets rare, multi-label, and
+and 50 purposive diagnostic tasks: 750 tasks over \ReviewUniqueParagraphs{} distinct paragraphs
+per reviewer. This separately versioned sample uses the expanded analytical
+population. Historical review tasks, assessments, coordinator links, and
+weights are retained in corrected copies and belong to their original frame. The diagnostic set targets rare, multi-label, and
 lower-confidence cases. Probability-sample estimates and diagnostic findings
 will be reported separately. Code-level human agreement and Cohen's kappa
 will describe consistency; model precision, recall, and F1 will be assessed
@@ -191,7 +199,7 @@ used to code the full paragraph.
 Primary eligibility requires at least 100 paragraphs, 15 speeches, and
 20 evaluated paragraphs per core codebook. A lower 50/10/10 threshold is
 used for sensitivity analysis. The primary eligible sample comprises
-10,296 paragraphs in 1,245 speeches from 26 states across 85 meeting records.
+\PrimaryParagraphs{} paragraphs in \PrimarySpeeches{} speeches from \EligibleCountries{} countries across \PrimaryMeetings{} meeting records.
 Separate binary mixed models are fitted
 for codes with at least 30 positive and 30 negative observations overall.
 Each model includes country, calendar month, log paragraph word count,
@@ -201,7 +209,7 @@ month and length distribution, with random intercepts set to zero.
 Approximate 95\% intervals use 400 fixed-effect draws.
 
 Omnibus country Wald tests, Benjamini--Hochberg adjustments, and a planned
-Israel-versus-other-states contrast are supplementary approximate outputs.
+Israel-versus-other-countries contrast are supplementary approximate outputs.
 Refits omitting length or replacing month with quarter assess specification;
 nonconverged refits are retained in diagnostics and excluded from predictions.
 The main heatmap standardizes probabilities within each code, so its colors
@@ -229,15 +237,14 @@ full model-refit bootstrap or evidence of enduring political blocs.
 \section{Analysis and Result}
 % Joint author contribution.
 \subsection{RQ1: A Shared Repertoire with Different Conditions for Peace}
-Direct violence (28.5\%) and structural violence (23.3\%) are the most
-frequent core codes; structural justice appears in 16.4\% of paragraphs
+Direct violence (\PrevVD{}\%) and structural violence (\PrevVS{}\%) are the most
+frequent core codes; structural justice appears in \PrevPNThree{}\% of paragraphs
 (Figure~\ref{fig:rq1-prevalence}). Because paragraphs can carry several
 codes, describing violence and articulating a peaceful settlement can
 coexist in the same passage.
 
-The leading three-block configuration combines structural justice,
-cooperative relations, and leaning mutual gain: 717 paragraphs (4.96\%)
-across 91 meeting records (Table~\ref{tab:rq1-configurations}). Its
+The leading three-block configuration combines \LeadingDescription{}:
+\LeadingCount{} paragraphs (\LeadingShare{}\%) across \LeadingMeetings{} meeting records (Table~\ref{tab:rq1-configurations}). Its
 meeting reach shows recurrence across the observed records; its paragraph
 share also makes clear that it is a minority configuration. The ten ranks
 are dominated by combinations involving cooperation or structural justice,
@@ -247,7 +254,7 @@ of speech or their political effectiveness.
 \begin{figure}[!htbp]
 \centering
 \includegraphics[width=\columnwidth]{../research_outputs/latex/paper/rq1_core_prevalence.pdf}
-\caption{Core-code prevalence among 14,463 paragraphs. Points show percentages;
+\caption{Core-code prevalence among \MainParagraphs{} paragraphs. Points show percentages;
 lines at points show 95\% speech-bootstrap intervals (500 draws). Codes
 can overlap. Short labels summarize the frozen codebook categories.}
 \Description{A grouped horizontal dot chart uses five pastel colors for
@@ -258,24 +265,23 @@ Printed percentages and a common zero-to-32 percent axis permit comparison.}
 \input{../research_outputs/latex/paper/rq1_configurations.tex}
 
 \subsection{RQ2: Differences in Relative Emphasis}
-Twenty of the 21 core-code models converged for 26 eligible states.
-The sparse no-relationship code (AB) is omitted from adjusted comparisons;
-its descriptive prevalence remains in RQ1. Figure~\ref{fig:rq2-heatmap}
+\ModelConverged{} of the \ModelTotal{} core-code models converged for \EligibleCountries{} eligible countries.
+Codes failing support or convergence screens (\ExcludedCodes{}) are omitted
+from adjusted comparisons; their descriptive prevalence remains in RQ1. Figure~\ref{fig:rq2-heatmap}
 shows variation across several dimensions, rather than a single ranking
 of states by peacefulness. A blue cell means above-average emphasis for
 that code; it need not indicate high absolute prevalence.
 
 Table~\ref{tab:rq2-anchor-extrema} grounds these relative colors in
-probabilities. Structural violence ranges from 6.0\% for Israel to 43.1\%
-for Pakistan under the common prediction distribution. Cooperative
-relations range from 0.4\% for Israel to 17.0\% for France.
+probabilities under the common prediction distribution. \VSRangeSentence{}
+\SYMRangeSentence{}
 These are differences in coded emphasis within the observed speeches.
 The selected extremes and approximate intervals do not establish causal
 explanations or tested pairwise country differences.
 \begin{figure*}[!tbp]
 \centering
 \includegraphics[width=\textwidth]{../research_outputs/latex/paper/rq2_adjusted_heatmap.pdf}
-\caption{Relative emphasis across 26 states and 20 converged codes.
+\caption{Relative emphasis across \EligibleCountries{} countries and \ProfileCodes{} converged codes.
 Adjusted probabilities are standardized within each code; peach is below
 and blue above its country mean. Countries follow PC1 order. Color represents
 standard deviations, not percentage points; values beyond $\pm2.5$ use
@@ -289,34 +295,41 @@ The diverging scale has explicit saturated ends.}
 \input{../research_outputs/latex/paper/rq2_anchor_extrema.tex}
 
 \subsection{RQ3: Continuous Similarities with Limited Group Stability}
-The first two components explain 42.8\% and 17.4\% of standardized,
-block-scaled variation, together 60.2\% (Figure~\ref{fig:rq3-pca}).
-Israel is separated along PC1; the detail panel makes variation among
-the other 25 states visible. Nearby points have similar profiles in
-this projection, but the remaining 39.8\% of variation is not shown.
+The first two components explain \PCOne{}\% and \PCTwo{}\% of standardized,
+block-scaled variation, together \PCShown{}\% (Figure~\ref{fig:rq3-pca}).
+The detail panel makes variation among \ZoomCountries{} countries visible.
+\OutsideDetailDescription{} Nearby points have similar profiles in
+this projection, but the remaining \PCHidden{}\% of variation is not shown.
 Neither an axis nor a point's position measures the legitimacy of a
 state's position or its commitment to peace.
 
-The largest silhouette is 0.449 at $k=2$, producing groups of 24 and 2
-(Table~\ref{tab:rq3-profile-checks}). At that solution, mean ARI is 0.611
-under fitted-model draws and 0.396 under speech resampling; the weakest
-group's mean Jaccard scores are 0.562 and 0.391, respectively. The two
-checks address different sources of variation, but neither supplies strong
-support for stable, discrete political groups. We therefore interpret
-profile similarities continuously and retain clustering as an exploratory
-diagnostic. More groups do not automatically produce more credible categories.
+The largest silhouette is \BestSilhouette{} at $k=\BestK{}$, producing groups
+of \BestSizes{} countries (Table~\ref{tab:rq3-profile-checks}). At $k=2$,
+\KTwoSmallGroup{} comprises \KTwoSmallMembers{} (\KTwoSmallSize{} countries);
+\KTwoLargeGroup{} contains the other \KTwoLargeSize{} eligible countries shown in Figure~\ref{fig:rq3-pca}.
+At the silhouette-selected solution, mean ARI is \ModelARI{} under
+fitted-model draws and \SpeechARI{} under speech resampling; the weakest
+group's mean Jaccard scores are \ModelJaccard{} and \SpeechJaccard{}, respectively.
+The checks address different sources of variation. We interpret profile
+similarities continuously and retain clustering as an exploratory diagnostic;
+these assignments do not establish enduring political groups.
+
 \begin{figure*}[!tbp]
 \centering
 \includegraphics[width=\textwidth]{../research_outputs/latex/paper/rq3_pca.pdf}
 \caption{PCA of adjusted, standardized, block-scaled profiles. Panel (a)
 shows all states; its dashed rectangle locates panel (b), which enlarges
-25 states. Both use equal units on the two axes. The peach point lies
-outside the detail view; colors do not indicate clusters. The country
-key is included below the map. Proximity concerns the displayed 60.2\%
-of profile variation.}
+\ZoomCountries{} countries. Both use equal units on the two axes. Peach diamonds mark P1
+(\KTwoOneSize{} countries); blue circles mark P2 (\KTwoTwoSize{} countries), from
+Ward clustering of all \ProfileCodes{} codes. Sensitivity diagnostics for these
+exploratory assignments appear in Table~\ref{tab:rq3-profile-checks}. The country key is
+included below the map. Proximity concerns the displayed \PCShown{}\% of
+profile variation.}
 \Description{Two side-by-side scatter plots show the full country range
-and an enlarged view with country abbreviations. Israel lies outside the
-detail region. A printed key expands every abbreviation.}
+and an enlarged view with country abbreviations. \OutsideDetailDescription{}
+Peach diamonds represent \KTwoOneSize{} countries in
+group P1; blue circles represent \KTwoTwoSize{} countries in P2. The legend
+identifies both groups, and a printed key expands every abbreviation.}
 \label{fig:rq3-pca}
 \end{figure*}
 \input{../research_outputs/latex/paper/rq3_profile_checks.tex}
@@ -379,7 +392,7 @@ routine updates in this subsection without treating validation as a formality.
 
 Several limits apply independently of validation. Agenda selection omits
 relevant discourse under other items, and 19 eligible records remain
-unannotated. The state comparison excludes observers and officials, and
+unannotated. The comparison includes Palestine while excluding the Holy See and officials, and
 its country thresholds exclude sparsely observed states. Official English
 records may reflect interpretation from other languages; paragraph extraction
 and procedural rules may omit or misclassify text. Adjusted models account

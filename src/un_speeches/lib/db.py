@@ -129,12 +129,15 @@ def next_reset(reset_hour: int = 0, now: datetime | None = None) -> datetime:
 
 
 class Store:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, *, readonly: bool = False):
         self.path = path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        self.conn = sqlite3.connect(str(path), isolation_level=None, timeout=30.0)
+        if not readonly:
+            path.parent.mkdir(parents=True, exist_ok=True)
+        self.conn = sqlite3.connect(f"file:{path.resolve()}?mode=ro" if readonly else str(path),
+                                    uri=readonly, isolation_level=None, timeout=30.0)
         self.conn.row_factory = sqlite3.Row
-        self.conn.executescript(SCHEMA)
+        if not readonly:
+            self.conn.executescript(SCHEMA)
 
     def close(self) -> None:
         self.conn.close()

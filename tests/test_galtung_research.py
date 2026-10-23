@@ -15,7 +15,7 @@ from un_speeches.research.research_outputs import _best_match_jaccard, export_la
 class ResearchPipelineTests(unittest.TestCase):
     def test_canonical_names_and_separate_violence_dimensions(self):
         cfg=load_config(); specs,rows=codebook_specs(cfg)
-        self.assertIn("relations",specs); self.assertIn("imperialism",specs); self.assertNotIn("coupling",specs)
+        self.assertIn("coupling",specs); self.assertIn("relational",specs); self.assertNotIn("relations",specs)
         dims={r["dimension"] for r in rows if r["codebook_id"]=="violence"}
         self.assertEqual(dims,{"violence_type","attribution"})
 
@@ -44,7 +44,7 @@ class ResearchPipelineTests(unittest.TestCase):
         if not (base/"analysis_matrix.parquet").exists(): self.skipTest("run prepare first")
         ann=pd.read_parquet(base/"annotations_long_deduplicated.parquet")
         self.assertFalse(ann.duplicated(["unit_id","codebook_id","codebook_version","run_id","dimension","value"]).any())
-        selected={("positive_negative",1,"laguna"),("violence",1,"laguna"),("relations",2,"laguna-v2"),("imperialism",1,"laguna"),("transcend",1,"laguna")}
+        selected={("positive_negative",1,"laguna"),("violence",1,"laguna"),("coupling",2,"laguna-v2"),("relational",1,"laguna"),("transcend",1,"laguna")}
         self.assertEqual(set(map(tuple,ann[["codebook_id","codebook_version","run_id"]].drop_duplicates().to_records(index=False))),selected)
         p=pd.read_parquet(base/"paragraphs.parquet"); self.assertTrue(p.join_status.eq("both").all())
         m=pd.read_parquet(base/"analysis_matrix.parquet")
@@ -53,7 +53,7 @@ class ResearchPipelineTests(unittest.TestCase):
         self.assertTrue(attr[violence.eq(0)].isna().all())
 
     def test_reviewer_blinding_and_blank_fields(self):
-        p=Path("research_outputs/validation/reviewers/validator_1.xlsx")
+        p=Path("research_outputs/validation_member_states_palestine_v1/reviewers/validator_1.xlsx")
         if not p.exists(): self.skipTest("run validation first")
         wb=load_workbook(p,read_only=True,data_only=False)
         for name in [x for x in wb.sheetnames if x not in ("Instructions","Frozen codebook definitions")]:

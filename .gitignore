@@ -28,6 +28,7 @@ data/gold/
 
 # samples/ — small hand-made spot-check extracts
 data/samples/
+data/review_materials_identifier_v1/
 
 # Python
 __pycache__/
@@ -64,3 +65,7 @@ paper/*.log
 paper/*.out
 paper/*.pdf
 /unspeech_context.zip
+
+# Local migration snapshots and staged research data (contain source/reviewer text).
+migration_backups/
+migration_staging/

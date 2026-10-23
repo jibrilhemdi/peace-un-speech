@@ -9,11 +9,12 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import yaml
+from un_speeches.lib.identifiers import source_codebook_id, normalize_output_records, MAPPING_VERSION
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from un_speeches.research.galtung_research import ROOT, STATUS, outdir, write_csv
+from un_speeches.research.galtung_research import ROOT, STATUS, outdir, write_csv, population
 
 
 def opaque_id(seed: int, cb: str, unit: str) -> str:
@@ -76,11 +77,31 @@ def _reviewer_workbook(path: Path, sheets: dict[str,pd.DataFrame], definitions: 
 
 def export_validation_pack(cfg: dict[str,Any], data: dict[str,pd.DataFrame]) -> None:
     seed=cfg["validation"]["seed"]; rng=np.random.default_rng(seed)
-    p=data["paragraphs"].loc[data["paragraphs"].in_scope.eq(True)].copy()
+    p=population(data["paragraphs"],cfg)
+    parameters = {"population": cfg["population"], "selected_runs": cfg["selected_runs"],
+                  "seed": seed, "probability_per_codebook": cfg["validation"]["probability_per_codebook"],
+                  "diagnostic_per_codebook": cfg["validation"]["diagnostic_per_codebook"],
+                  "validators": cfg["validation"]["validators"], "mapping_version": MAPPING_VERSION,
+                  "frame_unit_ids": sorted(p.unit_id.tolist())}
+    signature = hashlib.sha256(json.dumps(parameters, sort_keys=True, default=str).encode()).hexdigest()
+    manifest_path = outdir(cfg,"validation","coordinator_only")/"sampling_manifest.json"
+    if manifest_path.exists():
+        existing = json.loads(manifest_path.read_text())
+        if existing.get("sample_signature") == signature and existing.get("export_complete"):
+            # Completed assessments may now be present. Never regenerate them.
+            rdir = outdir(cfg,"validation","reviewers")
+            required = [rdir/f"validator_{v}.xlsx" for v in range(1,cfg["validation"]["validators"]+1)]
+            required += [rdir/f"validator_{v}_{cb}.csv" for v in range(1,cfg["validation"]["validators"]+1) for cb in cfg["selected_runs"]]
+            if not all(path.exists() for path in required):
+                raise FileNotFoundError("completed validation manifest has missing reviewer artifacts; preserve returns and use a fresh versioned directory")
+            return
+        raise FileExistsError(f"validation pack belongs to another or incomplete sample; use a fresh versioned directory: {manifest_path.parent.parent}")
     ev=data["evaluations"].loc[data["evaluations"].unit_id.isin(p.unit_id)].copy()
     ann=data["dedup"].loc[data["dedup"].unit_id.isin(p.unit_id)].copy()
     defs=data["dictionary"]
-    ctxt=_context(p); coordinator=[]; samples={}
+    # Focal tasks follow the analytical population; optional context retains the
+    # original adjacent source paragraphs, including procedural context.
+    ctxt=_context(data["paragraphs"].loc[data["paragraphs"].in_scope.eq(True)]); coordinator=[]; samples={}
     for cb,sel in cfg["selected_runs"].items():
         dims=defs.loc[defs.codebook_id.eq(cb),"dimension"].unique(); frame_status=ev[(ev.codebook_id.eq(cb)) & ev.dimension.eq(dims[0]) & ev.evaluation_status.eq("successful_complete")]
         frame=p[p.unit_id.isin(frame_status.unit_id) & p.para_is_procedural.eq(0)].copy()
@@ -97,7 +118,9 @@ def export_validation_pack(cfg: dict[str,Any], data: dict[str,pd.DataFrame]) -> 
         diag_pool["difficulty"]=(diag_pool.predicted_count.gt(1).astype(int)*-10000 + diag_pool.mean_confidence.fillna(1)*100 + diag_pool.rare_rank)
         nd=min(cfg["validation"]["diagnostic_per_codebook"],len(diag_pool)); diag=diag_pool.sort_values(["difficulty","unit_id"]).head(nd).copy()
         diag["sampling_component"]="diagnostic"; diag["selection_probability"]=np.nan; diag["sampling_weight"]=np.nan
-        sample=pd.concat([prob,diag],ignore_index=True); sample["sample_id"]=[opaque_id(seed,cb,u) for u in sample.unit_id]
+        sample=pd.concat([prob,diag],ignore_index=True)
+        sample["sample_version"]="member-states-and-palestine-v1"
+        sample["sample_id"]=[opaque_id(seed,"member-states-and-palestine-v1|"+cb,u) for u in sample.unit_id]
         sample["context_before"]=[ctxt.get((s,i),("",""))[0] for s,i in zip(sample.speech_id,sample.para_index)]
         sample["context_after"]=[ctxt.get((s,i),("",""))[1] for s,i in zip(sample.speech_id,sample.para_index)]
         # Context was not part of the original paragraph-only model input unit, even though requests were speech-batched.
@@ -107,14 +130,16 @@ def export_validation_pack(cfg: dict[str,Any], data: dict[str,pd.DataFrame]) -> 
         coord=sample.merge(predwide.add_prefix("prediction__"),left_on="unit_id",right_index=True,how="left")
         output_rows=predicted[predicted.unit_id.isin(sample.unit_id)].copy()
         output_rows["output_record"]=output_rows.apply(lambda r: json.dumps({"annotation_index":int(r.annotation_index),
-            "dimension":r.dimension,"value":r.value,"evidence":r.evidence,
+            "dimension":r.get("source_dimension",r.dimension),"value":r.value,"evidence":r.evidence,
             "confidence":None if pd.isna(r.confidence) else float(r.confidence)},ensure_ascii=False),axis=1)
         coord["original_llm_outputs"]=coord.unit_id.map(output_rows.groupby("unit_id").output_record.apply(lambda x:" | ".join(x))).fillna("")
+        coord["normalized_llm_outputs"]=coord.original_llm_outputs.map(normalize_output_records)
         coord["selection_stratum"]=np.where(coord.sampling_component.eq("probability"),"simple_random_evaluation_frame","diagnostic_rare_multilabel_low_confidence")
         for code in defs.loc[defs.codebook_id.eq(cb),"code"]:
             positive_ids=set(predicted.loc[predicted.value.eq(code),"unit_id"])
             coord[f"prediction_code__{code}"]=coord.unit_id.isin(positive_ids).astype("int8")
         coord["codebook_id"]=cb; coord["codebook_version"]=sel["version"]; coord["run_id"]=sel["run_id"]
+        coord["source_codebook_id"]=source_codebook_id(cb); coord["identifier_mapping_version"]=MAPPING_VERSION
         coordinator.append(coord)
         human_cols=[f"human_code__{code}" for code in defs.loc[defs.codebook_id.eq(cb),"code"]]
         review=sample[["sample_id","text","context_before","context_after"]].rename(columns={"text":"focal_paragraph"})
@@ -128,12 +153,14 @@ def export_validation_pack(cfg: dict[str,Any], data: dict[str,pd.DataFrame]) -> 
     cdir=outdir(cfg,"validation","coordinator_only"); rdir=outdir(cfg,"validation","reviewers")
     write_csv(coord,cdir/"coordinator_key.csv"); coord.to_parquet(cdir/"coordinator_key.parquet",index=False)
     manifest={"validation_status":"pending","seed":seed,"probability_per_codebook":cfg["validation"]["probability_per_codebook"],
+              "sample_signature":signature, "export_complete":False,
+              "sample_version":"member-states-and-palestine-v1", "population":cfg["population"],
               "diagnostic_per_codebook":cfg["validation"]["diagnostic_per_codebook"],"unique_paragraphs":int(coord.unit_id.nunique()),
               "tasks":len(coord),"per_codebook":coord.groupby("codebook_id").size().to_dict(),
               "probability_support":coord[coord.sampling_component.eq("probability")].groupby("codebook_id").size().to_dict(),
               "diagnostic_support":coord[coord.sampling_component.eq("diagnostic")].groupby("codebook_id").size().to_dict(),
               "note":"Diagnostic tasks are purposive and must not be pooled unweighted with probability tasks."}
-    (cdir/"sampling_manifest.json").write_text(json.dumps(manifest,indent=2),encoding="utf-8")
+    (cdir/"sampling_manifest.json").write_text(json.dumps(manifest,indent=2,default=str),encoding="utf-8")
     for v in range(1,cfg["validation"]["validators"]+1):
         vsheets={cb:df.sample(frac=1,random_state=seed+v+sum(map(ord,cb))).reset_index(drop=True) for cb,df in samples.items()}
         _reviewer_workbook(rdir/f"validator_{v}.xlsx",vsheets,defs)
@@ -141,6 +168,8 @@ def export_validation_pack(cfg: dict[str,Any], data: dict[str,pd.DataFrame]) -> 
             path=rdir/f"validator_{v}_{cb}.csv"
             if path.exists(): raise FileExistsError(f"refusing to overwrite reviewer CSV: {path}")
             write_csv(df,path)
+    manifest["export_complete"]=True
+    manifest_path.write_text(json.dumps(manifest,indent=2,default=str),encoding="utf-8")
 
 
 def write_validation_diagnostics(cfg: dict[str,Any]) -> None:

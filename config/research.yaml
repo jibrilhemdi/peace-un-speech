@@ -8,21 +8,21 @@ source:
 selected_runs:
   positive_negative: {version: 1, run_id: laguna}
   violence: {version: 1, run_id: laguna}
-  relations: {version: 2, run_id: laguna-v2}
-  imperialism: {version: 1, run_id: laguna}
+  coupling: {version: 2, run_id: laguna-v2}
+  relational: {version: 1, run_id: laguna}
   transcend: {version: 1, run_id: laguna}
 dimensions:
   positive_negative: [PN0, PN1, PN2, PN3, PN4]
   violence_type: [VD, VS, VC]
   attribution: [ATR-ISR, ATR-PAL, NONE]
-  relation_type: [SYM, ANTI, AB]
-  imperialism: [I0, I1, I2, I3, I4]
+  coupling_type: [SYM, ANTI, AB]
+  relational: [I0, I1, I2, I3, I4]
   transcend: [T0, T1, T2, T3, T4]
 core_profile_dimensions:
   positive_negative: positive_negative
   violence: violence_type
-  relations: relation_type
-  imperialism: imperialism
+  coupling: coupling_type
+  relational: relational
   transcend: transcend
 population:
   start_date: 2023-10-07
@@ -32,11 +32,13 @@ population:
   rq1_forums: [SC, GA]
   rq2_rq3_forum: SC
   observer_cases: [Palestine, Holy See]
+  included_observers: [Palestine]
   party_cases: [Israel, Palestine]
 thresholds:
   primary: {unique_paragraphs: 100, speeches: 15, evaluated_per_core_codebook: 20}
   sensitivity: {unique_paragraphs: 50, speeches: 10, evaluated_per_core_codebook: 10}
 validation:
+  directory: validation_member_states_palestine_v1
   probability_per_codebook: 100
   diagnostic_per_codebook: 50
   validators: 2

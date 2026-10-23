@@ -14,9 +14,9 @@ import pandas as pd
 from .research_outputs import _plot_setup
 
 
-BLOCKS = ["positive_negative", "violence_type", "relation_type", "imperialism", "transcend"]
+BLOCKS = ["positive_negative", "violence_type", "coupling_type", "relational", "transcend"]
 BLOCK_NAMES = {"positive_negative": "Peace conception", "violence_type": "Violence",
-               "relation_type": "Relations", "imperialism": "Power symmetry",
+               "coupling_type": "Coupling", "relational": "Relational",
                "transcend": "Conflict transformation"}
 SHORT = {"PN0": "Ceasefire only", "PN1": "Ceasefire + protection",
          "PN2": "Transitional steps", "PN3": "Structural justice",
@@ -35,8 +35,8 @@ TRIPLETS = [("PN3", "SYM", "T3"), ("PN0", "VD", "T0"), ("VS", "I0", "T0")]
 BLOCK_CODES = {
     "positive_negative": ["PN0", "PN1", "PN2", "PN3", "PN4"],
     "violence_type": ["VD", "VS", "VC"],
-    "relation_type": ["AB", "ANTI", "SYM"],
-    "imperialism": ["I0", "I1", "I2", "I3", "I4"],
+    "coupling_type": ["AB", "ANTI", "SYM"],
+    "relational": ["I0", "I1", "I2", "I3", "I4"],
     "transcend": ["T0", "T1", "T2", "T3", "T4"],
 }
 EXCERPTS = [
@@ -64,7 +64,7 @@ EXCERPTS = [
 COUNTRY_ABBR = {
     "Algeria": "ALG", "Brazil": "BRA", "China": "CHN", "Denmark": "DEN",
     "Ecuador": "ECU", "Egypt": "EGY", "France": "FRA", "Greece": "GRE",
-    "Guyana": "GUY", "Israel": "ISR", "Japan": "JPN", "Jordan": "JOR",
+    "Guyana": "GUY", "Israel": "ISR", "Palestine": "PAL", "Japan": "JPN", "Jordan": "JOR",
     "Malta": "MAL", "Mozambique": "MOZ", "Pakistan": "PAK", "Panama": "PAN",
     "Republic of Korea": "KOR", "Russian Federation": "RUS",
     "Sierra Leone": "SLE", "Slovenia": "SVN", "Somalia": "SOM",
@@ -96,10 +96,9 @@ def _table(path: Path, label: str, caption: str, spec: str, headers: list[str],
     path.write_text("% Generated from saved scoped outputs; do not hand-edit.\n" + "\n".join(body), encoding="utf-8")
 
 
-def _main_population(matrix: pd.DataFrame) -> pd.DataFrame:
-    return matrix[(matrix.role.eq("representative")) & matrix.para_is_procedural.eq(0)
-                  & matrix.in_scope.eq(True) & ~matrix.country.isin(["Palestine", "Holy See"])
-                  & matrix.forum.isin(["SC", "GA"])].copy()
+def _main_population(matrix: pd.DataFrame, cfg: dict | None = None) -> pd.DataFrame:
+    from .galtung_research import population, load_config
+    return population(matrix, cfg or load_config())
 
 
 def _rq1(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
@@ -177,8 +176,8 @@ def _rq1(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
     p2 = paper / "rq1_associations.pdf"; fig.savefig(p2); plt.close(fig)
 
     matrix = pd.read_parquet(root / "prepared_data/analysis_matrix.parquet")
-    d = _main_population(matrix)
-    assert len(d) == 14463 and d.speech_id.nunique() == 1751
+    snapshot = json.loads((root / "audit/snapshot_manifest.json").read_text())
+    d = _main_population(matrix, {"population": snapshot["population"]})
     from .paper_ranked import generate_ranked_rq1
     ranked_paths, ranked_summary = generate_ranked_rq1(
         root, paper, d, blocks=BLOCKS, block_codes=BLOCK_CODES,
@@ -192,13 +191,16 @@ def _rq1(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
 
 def _rq2(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
     d = pd.read_csv(root / "rq2_provisional/adjusted_probabilities.csv")
-    assert d.variant.eq("primary").all() and d.country.nunique() == 26 and d.feature.nunique() == 20
-    assert len(d) == 520 and not d[["adjusted_probability_re0", "ci_low", "ci_high"]].isna().any().any()
+    diagnostics = pd.read_csv(root / "rq2_provisional/model_diagnostics.csv")
+    retained = diagnostics.status.eq("ok") & diagnostics.converged.astype(str).str.lower().eq("true")
+    d = d[d.feature.isin(diagnostics.loc[retained, "feature"])].copy()
+    assert d.variant.eq("primary").all()
+    assert not d[["adjusted_probability_re0", "ci_low", "ci_high"]].isna().any().any()
     d["code"] = d.feature.str.split("__").str[-1]
     code_order = [c for c in SHORT if c in set(d.code)]
-    assert len(code_order) == 20 and "AB" not in code_order
     scores = pd.read_csv(root / "rq3_provisional/pca_scores.csv").sort_values("PC1")
     countries = scores.country.tolist()
+    n_countries, n_codes = len(countries), len(code_order)
     pivot = d.pivot(index="country", columns="code", values="adjusted_probability_re0").loc[countries, code_order]
     z = (pivot-pivot.mean(axis=0))/pivot.std(axis=0, ddof=0)
     assert np.isfinite(z.to_numpy()).all()
@@ -207,23 +209,25 @@ def _rq2(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
     cmap = LinearSegmentedColormap.from_list("pastel_emphasis", [ORANGE, "#fbfaf8", "#9bb4d9"])
     im = ax.imshow(z, aspect="auto", cmap=cmap, interpolation="nearest",
                    norm=TwoSlopeNorm(vmin=-2.5, vcenter=0, vmax=2.5))
-    ax.set_yticks(np.arange(26), countries, fontsize=7.1)
-    ax.set_xticks(np.arange(20), [SHORT[c] for c in code_order], rotation=58,
+    ax.set_yticks(np.arange(n_countries), countries, fontsize=7.1)
+    ax.set_xticks(np.arange(n_codes), [SHORT[c] for c in code_order], rotation=58,
                   ha="right", fontsize=6.7)
     ax.tick_params(axis="both", length=0, pad=4)
-    ax.set_yticks(np.arange(26)-.5, minor=True)
+    ax.set_yticks(np.arange(n_countries)-.5, minor=True)
     ax.grid(which="minor", axis="y", color="white", lw=.35)
     ax.tick_params(which="minor", length=0)
-    for split in [5, 8, 10, 15]:
+    block_sizes = [sum(c in code_order for c in BLOCK_CODES[b]) for b in BLOCKS]
+    boundaries = np.cumsum([0, *block_sizes])
+    for split in boundaries[1:-1]:
         ax.axvline(split-.5, color="white", lw=2)
-    ax.set_xlim(-.5, 19.5)
+    ax.set_xlim(-.5, n_codes-.5)
     from matplotlib.patches import Rectangle
-    for i, (start, stop) in enumerate([(0, 5), (5, 8), (8, 10), (10, 15), (15, 20)]):
+    for i, (start, stop) in enumerate(zip(boundaries[:-1], boundaries[1:])):
         ax.add_patch(Rectangle((start-.5, 1.02), stop-start, .065,
                               transform=ax.get_xaxis_transform(), facecolor=BLOCK_COLORS[i],
                               edgecolor="white", clip_on=False))
         ax.text((start+stop-1)/2, 1.05,
-                ["Peace", "Violence", "Relations", "Power", "Transformation"][i],
+                ["Peace", "Violence", "Coupling", "Relational", "Transformation"][i],
                 transform=ax.get_xaxis_transform(), ha="center", va="center", fontsize=7)
     for spine in ax.spines.values():
         spine.set_visible(False)
@@ -237,6 +241,13 @@ def _rq2(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
     rows, extrema = [], []
     for code in anchors:
         q = d[d.code.eq(code)].sort_values(["adjusted_probability_re0", "country"])
+        if q.empty:
+            rows.append([_tex(SHORT[code])+f" ({code})", "Not estimable", "--", "--", "--", "--"])
+            extrema.append({"code": code, "low_country": "Not estimable", "low_probability": np.nan,
+                            "low_ci_low": np.nan, "low_ci_high": np.nan, "high_country": "Not estimable",
+                            "high_probability": np.nan, "high_ci_low": np.nan, "high_ci_high": np.nan,
+                            "gap_percentage_points": np.nan, "estimation_status": "skipped or non-converged"})
+            continue
         low, high = q.iloc[0], q.iloc[-1]
         gap = 100*(high.adjusted_probability_re0-low.adjusted_probability_re0)
         rows.append([_tex(SHORT[code])+f" ({code})", _tex(low.country),
@@ -251,10 +262,12 @@ def _rq2(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
                         "gap_percentage_points": gap})
     t = paper / "rq2_anchor_extrema.tex"
     _table(t, "tab:rq2-anchor-extrema",
-           "Descriptive low and high adjusted probabilities for one anchor code per theory block. Brackets are approximate model intervals; gaps are percentage points, not pairwise tests.",
+           "Descriptive low and high adjusted probabilities for one anchor code per theory block. Failed convergence or support screens are shown as not estimable. Brackets are approximate model intervals; gaps are percentage points, not pairwise tests.",
            "lllllr", ["Anchor", "Low country", "Low \\% [95\\%]", "High country", "High \\% [95\\%]", "Gap"], rows)
     ep = paper / "rq2_anchor_extrema.csv"; pd.DataFrame(extrema).to_csv(ep, index=False)
-    return [p, t, ep], {"countries": countries, "codes": code_order, "extrema": extrema}
+    serializable_extrema = [{key: (None if isinstance(value, (float, np.floating)) and pd.isna(value) else value)
+                            for key, value in row.items()} for row in extrema]
+    return [p, t, ep], {"countries": countries, "codes": code_order, "extrema": serializable_extrema}
 
 
 def _rq3(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
@@ -264,18 +277,27 @@ def _rq3(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
     assignments = pd.read_csv(root / "rq3_provisional/cluster_assignments.csv")
     k2 = assignments[assignments.k.eq(2)].set_index("country").profile_id
     scores["group"] = scores.country.map(k2)
-    assert len(scores) == 26 and scores.group.notna().all()
+    assert scores.group.notna().all()
+    n_countries = len(scores)
+    detail = scores[scores.PC1.lt(3)]
+    def limits(values):
+        lo, hi = float(values.min()), float(values.max())
+        pad = max(.25, (hi-lo)*.12)
+        return lo-pad, hi+pad
+    detail_x, detail_y = limits(detail.PC1), limits(detail.PC2)
+    group_styles = {"P1": (ORANGE, "D"), "P2": (BLUE, "o")}
     fig, axes = plt.subplots(1, 2, figsize=(7.25, 4.25),
                              gridspec_kw={"width_ratios": [1.05, 1.6]})
-    fig.subplots_adjust(left=.07, right=.98, top=.92, bottom=.34, wspace=.28)
+    fig.subplots_adjust(left=.07, right=.98, top=.92, bottom=.36, wspace=.28)
     for ax, zoom in [(axes[0], False), (axes[1], True)]:
         q = scores if not zoom else scores[scores.PC1.lt(3)]
         for _, r in q.iterrows():
-            ax.scatter(r.PC1, r.PC2, color=ORANGE if r.PC1 >= 3 else BLUE,
+            color, marker = group_styles[r.group]
+            ax.scatter(r.PC1, r.PC2, color=color, marker=marker,
                        edgecolor=INK, linewidth=.45, s=30, zorder=3)
         ax.axhline(0, color="#ccd4d9", lw=.7); ax.axvline(0, color="#ccd4d9", lw=.7)
         ax.set_ylabel(f"PC2 ({yvar:.1f}%)", fontsize=8)
-        ax.set_title("a  All 26 countries" if not zoom else "b  Detail: 25 countries", loc="left", fontsize=9,
+        ax.set_title(f"a  All {n_countries} countries" if not zoom else f"b  Detail: {len(q)} countries", loc="left", fontsize=9,
                      fontweight="bold")
         ax.set_xlabel(f"PC1 ({xvar:.1f}%)", fontsize=8)
         ax.set_aspect("equal", adjustable="box")
@@ -283,15 +305,15 @@ def _rq3(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
         ax.tick_params(labelsize=7)
         if not zoom:
             from matplotlib.patches import Rectangle
-            ax.add_patch(Rectangle((-2.15, -1.95), 4.45, 4.30, fill=False,
+            ax.add_patch(Rectangle((detail_x[0], detail_y[0]), detail_x[1]-detail_x[0], detail_y[1]-detail_y[0], fill=False,
                                    linestyle="--", edgecolor="#9098a4", linewidth=.7))
-            ax.set_xlim(-2.6, 6.5); ax.set_ylim(-2.3, 2.7)
+            ax.set_xlim(*limits(scores.PC1)); ax.set_ylim(*limits(scores.PC2))
             for _, r in q.iterrows():
                 if r.PC1 >= 3 or r.country == "United States":
                     ax.annotate(r.country, (r.PC1, r.PC2), xytext=(3, 3),
                                 textcoords="offset points", fontsize=7)
         else:
-            ax.set_xlim(-2.15, 2.3); ax.set_ylim(-1.95, 2.35)
+            ax.set_xlim(*detail_x); ax.set_ylim(*detail_y)
             # Place each label in display coordinates, avoiding labels and markers.
             # Fixed candidate offsets make every regeneration deterministic.
             fig.canvas.draw()
@@ -331,14 +353,28 @@ def _rq3(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
                         ax.transData.transform((r.PC1, r.PC2)) + np.array(best)*fig.dpi/72)
                     ax.plot([r.PC1, target[0]], [r.PC2, target[1]],
                             color="#a6b5bf", lw=.45, zorder=1)
+    # Membership comes from the full profile space, not the displayed PCA axes.
+    from matplotlib.lines import Line2D
+    legend_labels = {}
+    for group in group_styles:
+        members = sorted(k2.index[k2.eq(group)])
+        label = " + ".join(members) if len(members) <= 3 else "Eligible countries"
+        legend_labels[group] = f"{group}: {label} (n={len(members)})"
+    handles = [Line2D([], [], linestyle="none", marker=marker,
+                      markerfacecolor=color, markeredgecolor=INK,
+                      markeredgewidth=.45, markersize=5, label=legend_labels[group])
+               for group, (color, marker) in group_styles.items()]
+    fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(.5, .28),
+               ncol=2, frameon=False, fontsize=7, handletextpad=.4, columnspacing=2)
     # Print the key in the figure itself, so a reviewer need not open a CSV.
     for index, country in enumerate(sorted(scores.country)):
         column, row = divmod(index, 7)
-        fig.text(.035 + column*.245, .23-row*.029,
-                 f"{COUNTRY_ABBR[country]}  {country}", fontsize=6.5, color=INK)
+        fig.text(.035 + column*.245, .20-row*.029,
+                 f"{COUNTRY_ABBR[country]}  {country} [{k2.loc[country]}]", fontsize=6.5, color=INK)
     p1 = paper / "rq3_pca.pdf"; fig.savefig(p1); plt.close(fig)
     key = paper / "rq3_pca_country_key.csv"
-    pd.DataFrame([{"plot_label": COUNTRY_ABBR[c], "country": c}
+    pd.DataFrame([{"plot_label": COUNTRY_ABBR[c], "country": c,
+                   "profile_id_k2": k2.loc[c]}
                   for c in sorted(scores.country)]).to_csv(key, index=False)
 
     countries = scores.sort_values("PC1").country.tolist()
@@ -348,17 +384,17 @@ def _rq3(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
             ["Fitted-model draws", "Speech-resampled descriptive"]):
         d = pd.read_csv(root / f"rq3_provisional/{method}.csv")
         d = d[d.k.eq(2)]
-        assert len(d) == 26*25//2 and d.replicates.eq(400).all()
+        assert len(d) == n_countries*(n_countries-1)//2
         ix = {c:i for i,c in enumerate(countries)}
-        matrix = np.eye(26)
+        matrix = np.eye(n_countries)
         for _, r in d.iterrows():
             i, j = ix[r.country_a], ix[r.country_b]
             matrix[i, j] = matrix[j, i] = r.co_cluster_rate
         from matplotlib.colors import LinearSegmentedColormap
         cmap = LinearSegmentedColormap.from_list("pastel_co_cluster", ["#fbfaf8", BLUE, "#8b9ac1"])
         im = ax.imshow(matrix, vmin=0, vmax=1, cmap=cmap, interpolation="nearest")
-        ax.set_xticks(range(26), [COUNTRY_ABBR[c] for c in countries], rotation=90, fontsize=5.2)
-        ax.set_yticks(range(26), countries, fontsize=5.2)
+        ax.set_xticks(range(n_countries), [COUNTRY_ABBR[c] for c in countries], rotation=90, fontsize=5.2)
+        ax.set_yticks(range(n_countries), countries, fontsize=5.2)
         ax.set_title(title, fontsize=8.5, fontweight="bold")
     fig.colorbar(im, ax=axes, fraction=.025, pad=.045, shrink=.85,
                  label="Co-clustering rate")
@@ -380,6 +416,85 @@ def _rq3(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
            "rrrrrrr", ["$k$", "Silhouette", "Min. group", "Model ARI", "Model Jacc.",
                         "Speech ARI", "Speech Jacc."], rows)
     return [p1, p2, t, key], {"k2_sizes": k2.value_counts().to_dict(), "pca_explained": [xvar, yvar]}
+
+
+def _paper_values(root: Path, paper: Path) -> Path:
+    """Keep manuscript sample sizes and numerical claims tied to the saved run."""
+    snapshot = json.loads((root / "audit/snapshot_manifest.json").read_text())
+    matrix = pd.read_parquet(root / "prepared_data/analysis_matrix.parquet")
+    from .galtung_research import population
+    cfg = {"population": snapshot["population"]}
+    main = population(matrix, cfg)
+    sc = population(matrix, cfg, snapshot["population"]["rq2_rq3_forum"])
+    eligibility = pd.read_csv(root / "audit/country_eligibility.csv")
+    primary = sc[sc.country.isin(eligibility.loc[eligibility.included_primary, "country"])]
+    prev = pd.read_csv(root / "rq1_provisional/prevalence.csv").set_index("code")
+    ranked = pd.read_csv(paper / "rq1_triplet_rankings.csv").iloc[0]
+    diagnostics = pd.read_csv(root / "rq2_provisional/model_diagnostics.csv")
+    converged = diagnostics.status.eq("ok") & diagnostics.converged.astype(str).str.lower().eq("true")
+    variance = pd.read_csv(root / "rq3_provisional/pca_explained_variance.csv").explained_variance_ratio
+    scores = pd.read_csv(root / "rq3_provisional/pca_scores.csv")
+    assignments = pd.read_csv(root / "rq3_provisional/cluster_assignments.csv")
+    k2 = assignments[assignments.k.eq(2)]
+    diag = pd.read_csv(root / "rq3_provisional/cluster_k_diagnostics.csv")
+    best = diag.loc[diag.silhouette.idxmax()]
+    stability = pd.read_csv(root / "rq3_provisional/light_stability_summary.csv")
+    model = stability[stability.k.eq(best.k) & stability.method.eq("mean_field_model_draws")].iloc[0]
+    speech = stability[stability.k.eq(best.k) & stability.method.eq("speech_resampled_descriptive")].iloc[0]
+    new_manifest = root / "validation_member_states_palestine_v1/coordinator_only/sampling_manifest.json"
+    review = json.loads(new_manifest.read_text()) if new_manifest.exists() else {}
+    values = {"MainParagraphs": f"{len(main):,}", "MainSpeeches": f"{main.speech_id.nunique():,}",
+              "SCParagraphs": f"{len(sc):,}", "EligibleCountries": str(primary.country.nunique()),
+              "PrimaryParagraphs": f"{len(primary):,}", "PrimarySpeeches": f"{primary.speech_id.nunique():,}",
+              "PrimaryMeetings": str(primary.meeting_id.nunique()), "ModelConverged": str(int(converged.sum())),
+              "ModelTotal": str(len(diagnostics)), "ProfileCodes": str(int(converged.sum())),
+              "ExcludedCodes": ", ".join(diagnostics.loc[~converged, "feature"].str.split("__").str[-1]),
+              "LeadingCount": f"{ranked.paragraphs:,}", "LeadingShare": f"{100*ranked.share:.2f}",
+              "LeadingMeetings": str(int(ranked.meetings)), "LeadingDescription": _tex(ranked.constructs),
+              "PCOne": f"{100*variance.iloc[0]:.1f}", "PCTwo": f"{100*variance.iloc[1]:.1f}",
+              "PCShown": f"{100*variance.iloc[:2].sum():.1f}", "PCHidden": f"{100*(1-variance.iloc[:2].sum()):.1f}",
+              "ZoomCountries": str(int(scores.PC1.lt(3).sum())), "BestK": str(int(best.k)),
+              "BestSilhouette": f"{best.silhouette:.3f}",
+              "BestSizes": " and ".join(str(int(n)) for n in assignments[assignments.k.eq(best.k)].profile_id.value_counts().sort_values()),
+              "KTwoOneSize": str(int(k2.profile_id.eq("P1").sum())),
+              "KTwoTwoSize": str(int(k2.profile_id.eq("P2").sum())),
+              "KTwoOneMembers": _tex(" and ".join(sorted(k2.loc[k2.profile_id.eq("P1"), "country"]))),
+              "ModelARI": f"{model.mean_ari:.3f}", "SpeechARI": f"{speech.mean_ari:.3f}",
+              "ModelJaccard": f"{model.minimum_cluster_mean_jaccard:.3f}",
+              "SpeechJaccard": f"{speech.minimum_cluster_mean_jaccard:.3f}",
+              "ReviewUniqueParagraphs": str(review.get("unique_paragraphs", "historical sample"))}
+    outside = sorted(scores.loc[scores.PC1.ge(3), "country"])
+    values["OutsideDetailDescription"] = ((_tex(" and ".join(outside)) +
+        (" lies" if len(outside) == 1 else " lie") + " outside the detail region.") if outside
+        else "All countries remain in the detail region.")
+    group_sizes = k2.profile_id.value_counts()
+    smaller = group_sizes.idxmin(); larger = group_sizes.idxmax()
+    values["KTwoSmallGroup"] = smaller
+    values["KTwoLargeGroup"] = larger
+    values["KTwoSmallSize"] = str(int(group_sizes.loc[smaller]))
+    values["KTwoLargeSize"] = str(int(group_sizes.loc[larger]))
+    members = sorted(k2.loc[k2.profile_id.eq(smaller), "country"])
+    values["KTwoSmallMembers"] = _tex(", ".join(members[:-1]) + (", and " + members[-1] if len(members) > 1 else members[0]))
+    for code in ("VD", "VS"):
+        values["Prev"+code] = f"{100*prev.loc[code, 'paragraph_prevalence']:.1f}"
+    values["PrevPNThree"] = f"{100*prev.loc['PN3', 'paragraph_prevalence']:.1f}"
+    extrema = pd.read_csv(paper / "rq2_anchor_extrema.csv").set_index("code")
+    for code in ("VS", "SYM"):
+        row = extrema.loc[code]
+        values[code+"Low"] = f"{100*row.low_probability:.1f}" if pd.notna(row.low_probability) else "--"
+        values[code+"High"] = f"{100*row.high_probability:.1f}" if pd.notna(row.high_probability) else "--"
+        values[code+"LowCountry"] = _tex(row.low_country)
+        values[code+"HighCountry"] = _tex(row.high_country)
+        if pd.notna(row.low_probability) and pd.notna(row.high_probability):
+            label = "Structural violence" if code == "VS" else "Cooperative relations"
+            values[code+"RangeSentence"] = (label + f" range from {100*row.low_probability:.1f}\\% for "
+                + _tex(row.low_country) + f" to {100*row.high_probability:.1f}\\% for " + _tex(row.high_country) + ".")
+        else:
+            values[code+"RangeSentence"] = f"The {code} adjusted model is not estimable under the declared screens; no range is reported."
+    path = paper / "paper_values.tex"
+    path.write_text("% Generated numerical manuscript values; do not hand-edit.\n" +
+                    "\n".join("\\newcommand{\\" + key + "}{" + value + "}" for key, value in values.items()) + "\n")
+    return path
 
 
 def generate_paper_assets(root: Path, output: Path) -> list[Path]:
@@ -404,6 +519,7 @@ def generate_paper_assets(root: Path, output: Path) -> list[Path]:
     a, asummary = _rq1(root, paper, plt)
     b, bsummary = _rq2(root, paper, plt)
     c, csummary = _rq3(root, paper, plt)
+    values = _paper_values(root, paper)
     manifest = paper / "paper_asset_manifest.json"
     manifest.write_text(json.dumps({"source": "saved scoped analysis outputs",
                                     "status": "provisional_unvalidated",
@@ -411,4 +527,4 @@ def generate_paper_assets(root: Path, output: Path) -> list[Path]:
                                     "tables": [p.name for p in [*a, *b, *c] if p.suffix == ".tex"],
                                     "vector_figures": [p.name for p in [*a, *b, *c] if p.suffix == ".pdf"]},
                                    indent=2, default=str)+"\n", encoding="utf-8")
-    return [*a, *b, *c, manifest]
+    return [*a, *b, *c, values, manifest]

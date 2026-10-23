@@ -35,6 +35,7 @@ def write_provisional_report(cfg: dict, data: dict[str, pd.DataFrame], root: Pat
     top_text = ", ".join(f"{r.code} ({100*r.paragraph_prevalence:.1f}%)" for r in top.itertuples())
     feature_count = pd.read_csv(output / "rq3_provisional" / "adjusted_profile_matrix.csv").shape[1] - 1
     country_count = pd.read_csv(output / "rq3_provisional" / "adjusted_profile_matrix.csv").shape[0]
+    population_label = "UN member states and Palestine" if "Palestine" in cfg["population"].get("included_observers", []) else "UN member states"
     lines = [
         "# Provisional Galtung analysis report", "",
         "**PROVISIONAL / UNVALIDATED. Human assessment is pending.**", "",
@@ -43,7 +44,7 @@ def write_provisional_report(cfg: dict, data: dict[str, pd.DataFrame], root: Pat
         f"Of {eligible} eligible collected meetings, {annotated} have the selected annotation runs; "
         f"{eligible-annotated} are eligible but unannotated. The latest annotated eligible meeting is "
         f"{main.date.max().date()}. These results describe the annotated subset.", "",
-        f"RQ1 uses {len(main):,} substantive member-state paragraphs in {main.speech_id.nunique():,} speeches. "
+        f"RQ1 uses {len(main):,} substantive representative paragraphs from {population_label} in {main.speech_id.nunique():,} speeches. "
         f"RQ2/RQ3 use the Security Council subset ({len(sc):,} paragraphs) subject to country thresholds. "
         "The source database and its annotations were read without alteration. Unobserved codes are zero only "
         "where the selected annotation job establishes complete evaluation; otherwise they are missing.", "",

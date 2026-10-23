@@ -23,8 +23,8 @@ Each table is written once per requested format, into its own subdirectory:
 Parquet is the one to analyse from; csv and excel exist to be opened and read. Round-tripping
 a csv back into pandas loses the nullable-integer types, so treat them as views, not sources.
 
-Everything is derived from the database alone. Nothing calls the API, and re-running with the
-same DB produces byte-identical tables.
+Everything is derived from the database alone. Nothing calls the API. Re-running with the
+same DB preserves table records and values; export timestamps and workbook metadata may differ.
 """
 
 from __future__ import annotations
@@ -43,6 +43,7 @@ import pandas as pd
 from un_speeches.lib import codebook as cbmod  # noqa: E402
 from un_speeches.lib.config import Config, model_tag  # noqa: E402
 from un_speeches.lib.db import Store  # noqa: E402
+from un_speeches.lib.identifiers import codebook_id, normalize_frame, mapping_manifest
 
 
 def _put(matrix, name, col, dtype, multi_run, rid):
@@ -163,15 +164,15 @@ def main() -> int:
         print(f"no database at {db_path}", file=sys.stderr)
         return 1
 
-    store = Store(db_path)
+    store = Store(db_path, readonly=True)
     out_dir = cfg.path_for("exports")
     out_dir.mkdir(parents=True, exist_ok=True)
     cb_dir = cfg.path_for("codebooks")
 
     runs = [r for r in store.codebook_runs() if r[2] in run_ids]
     if args.codebook:
-        keep = set(args.codebook)
-        runs = [r for r in runs if r[0] in keep]
+        keep = {codebook_id(c) for c in args.codebook}
+        runs = [r for r in runs if codebook_id(r[0]) in keep]
     if not runs:
         print(f"nothing to export for run_id(s) {run_ids}", file=sys.stderr)
         store.close()
@@ -196,6 +197,7 @@ def main() -> int:
         "database": str(db_path),
         "include_procedural": args.include_procedural,
         "codebooks": {},
+        "identifier_mapping": mapping_manifest(),
     }
 
     long_frames: list[pd.DataFrame] = []
@@ -209,13 +211,15 @@ def main() -> int:
                   .reset_index(drop=True))
 
     for cb_id, rid, version in sorted(selected):
+        source_id = cb_id
+        cb_id = codebook_id(source_id)
         try:
             cb = cbmod.require_codebook(cb_dir, cb_id)
         except cbmod.CodebookError as exc:
             print(f"skipping {cb_id}: {exc}", file=sys.stderr)
             continue
 
-        params = (cb_id, version, rid)
+        params = (source_id, version, rid)
         ann = pd.read_sql_query(
             """SELECT unit_id, codebook_id, codebook_version, run_id, annotation_index,
                       dimension, value, evidence, confidence, evidence_verified
@@ -229,6 +233,7 @@ def main() -> int:
             store.conn, params=params,
         )
         done_ids = set(done.unit_id)
+        ann = normalize_frame(ann)
         done["model_tag"] = done.model.map(model_tag)
         # The model is known at request time and recorded per job — never inferred from the
         # response. Carrying it into every export is what lets a later re-run on a different
@@ -251,6 +256,10 @@ def main() -> int:
         for dim in cb.dimensions:
             codes = list(dim.codes) + (["NONE"] if dim.allows_none() else [])
             sub = ann[ann.dimension == dim.name]
+            evaluable_ids = done_ids
+            if dim.conditional_on:
+                parent = ann[ann.dimension.eq(dim.conditional_on.dimension)]
+                evaluable_ids = done_ids & set(parent.loc[parent.value.map(dim.conditional_on.satisfied_by), "unit_id"])
 
             # An ordinal dimension also gets its numeric score, so the scale can enter a
             # regression directly while the same annotation still enters an MCA as categories.
@@ -271,7 +280,7 @@ def main() -> int:
                     per_unit = scored.groupby("unit_id")._score.agg(agg)
                 name = f"{cb_id}__{dim.name}__score"
                 col = matrix.unit_id.map(per_unit)
-                col = col.where(matrix.unit_id.isin(done_ids), other=pd.NA)
+                col = col.where(matrix.unit_id.isin(evaluable_ids), other=pd.NA)
                 dtype = "Float32" if dim.score_aggregation == "mean" else "Int8"
                 _put(matrix, name, col.astype(dtype), dtype, multi_run, rid)
                 if name not in matrix_cols:
@@ -283,7 +292,7 @@ def main() -> int:
                 col = matrix.unit_id.isin(hit).astype("int8")
                 # A unit that was never successfully annotated is NA, not zero — a missing
                 # label and an absent code are different things and must not be conflated.
-                col = col.where(matrix.unit_id.isin(done_ids), other=pd.NA)
+                col = col.where(matrix.unit_id.isin(evaluable_ids), other=pd.NA)
                 _put(matrix, name, col.astype("Int8"), "Int8", multi_run, rid)
                 if name not in matrix_cols:
                     matrix_cols.append(name)
@@ -305,6 +314,7 @@ def main() -> int:
 
         manifest["codebooks"][f"{cb_id}@{rid}" if multi_run else cb_id] = {  # type: ignore[index]
             "codebook_id": cb_id,
+            "source_codebook_id": source_id,
             "run_id": rid,
             "version_run": version,
             "version_on_disk": cb.version,

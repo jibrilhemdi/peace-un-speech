@@ -1,7 +1,7 @@
 # Paper guide
 
 `main.tex` is the anonymous, two-column ACM review draft. The compiled PDF is
-`main.pdf`; the current draft has **seven pages**, including references and appendix.
+`main.pdf`; the page count is checked after each build, including references and appendix.
 
 ## Structure and ownership
 
@@ -30,6 +30,8 @@ latexmk -pdf -cd -interaction=nonstopmode -halt-on-error paper/main.tex
 This regenerates assets and builds the PDF without LLM calls or model refits.
 Figures and tables are generated in `research_outputs/latex/paper/`; edit their
 Python generators in `src/un_speeches/research/` to make lasting display changes.
+Numerical claims in the manuscript use generated `paper_values.tex` commands so population
+counts, estimates, PCA percentages, and group membership follow the rebuilt analyses.
 When transferring the draft, include that asset directory alongside `paper/`.
 
 The main text uses one figure per research question and three tables. Ten

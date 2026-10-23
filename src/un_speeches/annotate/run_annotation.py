@@ -471,6 +471,16 @@ def main() -> int:
         return 1
 
     db_path = cfg.path_for("db")
+    # An identifier correction must not enqueue historical jobs under a new name
+    # or make their stored prompt/request hashes appear stale.
+    from un_speeches.lib.identifiers import source_codebook_id
+    if db_path.exists() and source_codebook_id(cb.id) != cb.id:
+        import sqlite3
+        with sqlite3.connect(f"file:{db_path}?mode=ro", uri=True) as historical:
+            exists = historical.execute("SELECT 1 FROM jobs WHERE codebook_id=? AND codebook_version=? LIMIT 1",
+                (source_codebook_id(cb.id), cb.version)).fetchone()
+        if exists:
+            cb = cbmod.historical_codebook(cfg.path_for("codebooks"), cb.id)
     if not db_path.exists() and not cfg.path_for("units").exists():
         print("no units found — run: python -m un_speeches.annotate.segment_units", file=sys.stderr)
         return 1

@@ -88,4 +88,17 @@ undefined.
 
 Configuration, selected runs, fixed seeds, thresholds, and feature blocks are in
 `config/research.yaml`. Attribution is supplementary and is excluded from the core profile.
-Project identifiers remain `relations` and `imperialism`; `coupling` is never canonical.
+The canonical identifiers are `coupling` / `coupling_type` (display **Coupling**) and
+`relational` / `relational` (display **Relational**). The versioned read-boundary mapping
+preserves the historical SQLite identifiers, responses, hashes, runs and versions.
+The main population includes **UN member states and Palestine**; Palestine remains
+a non-member observer and conflict party, while the Holy See and officials remain excluded.
+Analysis, evidence selection, paper assets and new validation samples share `population()`.
+See [the migration guide](IDENTIFIER_MIGRATION.md) for the two-stage verification and rollback.
+
+The preserved historical pack is `research_outputs/validation/`; its sample IDs, assessments,
+coordinator links and original-frame weights are unchanged apart from structured naming.
+The separately drawn expanded-population pack is
+`research_outputs/validation_member_states_palestine_v1/`. Use that directory's own coordinator
+key when scoring its returns. The new probability sample records its exact frame probabilities
+and weights; diagnostic tasks remain separate. Do not pool weights between pack versions.
