@@ -28,11 +28,11 @@ do their emphases differ? We examine \MainParagraphs{} substantive paragraphs fr
 \MainSpeeches{} speeches in 93 annotated meeting records between October 2023 and
 December 2025. Five Galtungian codebooks guide large language model
 annotation of peace, violence, Coupling, Relational, and conflict
-transformation. Descriptive analysis identifies common codes and their
+transformation. Descriptive analysis identifies common theory components and their
 combinations; mixed models compare \EligibleCountries{} eligible countries in the Security
 Council; principal component analysis maps their adjusted profiles.
-Direct and structural violence are the most frequent codes. The leading
-three-code combination links structural justice, cooperative relations,
+Direct and structural violence are the most frequent components. The leading
+three-component combination links structural justice, cooperative relations,
 and mutual gain. Country profiles vary, but clustering provides limited
 support for discrete groups. Source-speech examples clarify the different
 conditions attached to peace. Human validation is pending; the findings
@@ -59,28 +59,51 @@ currently describe model-coded discourse in the annotated subset.
 
 \section{Introduction}
 % Lead author: r. Retain this section for the agreed author contribution.
-\emph{Placeholder: Develop the research problem, contribution, and motivation.}
+In UN multilateral diplomacy following the October 7, 2023 attacks, "peace" functions as a ubiquitous normative imperative. Member states universally invoke peace to legitimize their positions \cite{hurd2008after}. However, this rhetorical consensus obscures profound substantive divergence. Political actors attach fundamentally different meanings to what peace requires, transforming the language of peace into a contested vocabulary used to define the conflict and justify specific political pathways \cite{milliken1999study}. The analytical danger lies in mistaking this rhetorical agreement for actual political consensus.
+
+Understanding these divergent meanings is critical, because the specific "peace" a state constructs dictates its diplomatic behavior and approach to conflict resolution. Failing to systematically measure these variations blinds scholars to the true fault lines in international diplomacy.
+
+To address this, this study operationalizes Johan Galtung’s framework through a novel five-axis model—encompassing violence types, the negative-positive spectrum, relational symmetry, coupling forms, and transcendence \cite{galtung1969violence,galtung2012peace}. Methodologically, we advance diplomatic discourse analysis by utilizing Large Language Models (LLMs) as structured data annotators, enabling scalable, reproducible coding of verbatim UN member-state statements. Empirically, we map how peace is constructed across these Galtung's dimensions, how dimensional emphasis varies across states, and what distinct "peace profiles" emerge, offering a new computational toolkit for multilateral discourse.
 
 \section{Literature Review}
 % Lead author: r. Retain this section for the agreed author contribution.
-\emph{Placeholder: Add verified scholarship on peace theory, diplomatic discourse,
-and computational content analysis.}
+The conceptualization of peace extends far beyond the mere absence of war. While \cite{galtung1969violence} foundational typology distinguishes between negative and positive peace by addressing direct, structural, and cultural violence, his later work expands this into a multidimensional framework. This advanced framework explicitly incorporates relational symmetry, forms of coupling (abiosis, antibiosis, symbiosis), and transcendence beyond zero-sum logic \cite{galtung2012peace}. Building on this, critical peace studies argue that peace is a contested political project, not a neutral endpoint \cite{richmond2005transformation}. Therefore, operationalizing peace requires capturing these five distinct Galtung's dimensions.
+
+Within International Relations, diplomatic discourse is the primary arena where these contested meanings are articulated. Moving beyond rationalist views of diplomacy as mere bargaining, scholars emphasize its discursive and performative dimensions \cite{neumann2002returning,sending2015diplomacy}. In multilateral settings, diplomatic statements actively construct normative realities and frame the boundaries of acceptable political solutions.
+
+Traditionally, analyzing large corpora of such text relied on manual coding, limiting scalability. The "text as data" paradigm has revolutionized this field \cite{grimmer2013text}. While early computational methods relied on rigid dictionary-based approaches, recent advancements in Large Language Models (LLMs) offer unprecedented capabilities for nuanced semantic annotation. Gilardi, Alizadeh, and Kubli (2023) demonstrate that LLMs can match human coders in complex text-annotation tasks. This study leverages this methodological leap to systematically map these five Galtung's peace orientations across vast diplomatic corpora.
+
+\section{Theoretical Framework: Operationalizing Galtung's Five Axes}
+\label{sec:framework}
+To systematically map the multidimensionality of peace in diplomatic discourse, this study operationalizes Johan Galtung’s conflict transformation theory into five distinct analytical axes. Rather than treating peace as a monolithic or binary outcome, these dimensions function as independent coding constructs that capture specific semantic and normative orientations within UN member-state statements. Each axis translates abstract theoretical concepts into discrete textual indicators for computational annotation.
+\subsection{Axis 1: Typology of Violence}
+This axis distinguishes the primary obstacle to peace identified in diplomatic rhetoric, differentiating between direct, structural, and cultural violence \cite{galtung1969violence}. Direct violence codes refer to explicit physical harm or immediate security threats (e.g., bombardment, casualties); structural violence denotes systemic conditions preventing needs fulfillment (e.g., occupation, blockade, institutional exclusion); and cultural violence encompasses legitimizing narratives that normalize harm (e.g., dehumanization, hate speech). In computational analysis, identifying the foregrounded violence type reveals whether a state frames peace primarily as securitization and cessation of hostilities, or as the dismantling of systemic inequities and hegemonic discourses.
+\subsection{Axis 2: Negative--Positive Peace Spectrum}
+Building on Galtung’s foundational distinction, this spectrum measures the temporal and substantive depth of the envisioned peace \cite{galtung1969violence,galtung2012peace}. Negative peace is coded when discourse focuses exclusively on the absence of direct violence (ceasefire, stopping fighting). Transitional peace incorporates preliminary confidence-building measures such as dialogue or humanitarian access. Positive peace demands the active presence of equitable structures, institutions, and rights. This dimension captures whether diplomatic statements treat peace as a temporary negative condition or as a transformative political project requiring systemic reconfiguration.
+\subsection{Axis 3: Relational Symmetry}
+Peace is analyzed here not merely as an end-state but as a relationship defined by power asymmetry. This axis assesses the distribution of agency and decision-making authority between conflicting parties, ranging from total asymmetry (external imposition, unilateral dictates) through negotiated balance to full equality (mutual self-determination, shared ownership) \cite{galtung2012peace}. Within UNSC discourse, this dimension exposes whether proposed solutions reproduce hierarchical power structures and paternalistic oversight, or envision genuinely reciprocal political relationships where both parties possess equal normative standing.
+\subsection{Axis 4: Coupling}
+Drawing from Galtung’s biological metaphors for social relations, this axis categorizes the envisioned structural interdependence between parties \cite{galtung2012peace}. \textit{Abiosis} implies separation or non-relation (partition, isolation); \textit{antibiosis} describes active mutual destruction or zero-sum elimination; and \textit{symbiosis} represents intertwined coexistence where both parties’ core needs are mutually supported. Moving beyond simple binaries of conflict versus cooperation, this framework captures nuanced visions of how two peoples might structurally relate—or fail to relate—in a post-conflict order, distinguishing mere coexistence from genuine interdependence.
+\subsection{Axis 5: Transcendence and Conflict Transformation}
+The final axis evaluates the underlying logic of resolution itself. Zero-sum framing assumes one side’s gain necessitates the other’s loss (victory/defeat). Compromise involves mutual concession without fundamental reframing. Transcendence, Galtung’s highest ideal, seeks creative solutions that satisfy the core needs of all parties beyond their initial positions through ``both/and'' thinking \cite{galtung2012peace}. In diplomatic rhetoric, this dimension identifies whether states reproduce entrenched positional bargaining or articulate genuinely transformative pathways that reframe the conflict’s underlying contradictions rather than merely managing its symptoms.
+
 
 \section{Method}
 % Lead author: j.
 \subsection{Research Questions and Study Design}
 We examine peace discourse at three connected levels: the repertoire used
 across speeches, differences in emphasis between states, and similarities
-between their overall profiles. A \emph{code} marks a defined textual
-feature; a \emph{configuration} combines codes within a paragraph; a
-\emph{country profile} summarizes a state's adjusted code probabilities.
+between their overall profiles. A \emph{theory component} is a defined textual
+indicator of the framework; a \emph{configuration} combines components within
+a paragraph; a \emph{country profile} summarizes a state's adjusted
+probabilities for these components.
 These distinctions connect the following questions to the analyses:
 \begin{enumerate}
   \item \textbf{RQ1: How is peace constructed?} Which Galtungian dimensions
   of peace, violence, Coupling, Relational, and conflict transformation
   appear, and which recur together?
   \item \textbf{RQ2: How does emphasis vary across UN member states and Palestine?} How do
-  code probabilities differ when states are compared over a common
+  component probabilities differ when states are compared over a common
   distribution of meeting months and paragraph lengths?
   \item \textbf{RQ3: Which states have similar or contrasting profiles?}
   What continuous patterns and recurring configurations emerge from
@@ -124,15 +147,16 @@ country eligibility thresholds. These choices define whose discourse
 is represented; they do not assess the standing of excluded speakers.
 
 \subsection{LLM Annotation and Measurement}
-Five fixed codebooks operationalize 21 core codes in five theory blocks:
-peace conception, violence, Coupling, Relational, and conflict
-transformation. We use version 1 for peace, violence, Relational, and
-transcend, and version 2 for Coupling. These are corrected display names:
+Five fixed codebooks operationalize 21 theory components in five blocks:
+peace conception, violence, coupling, relational symmetry, and conflict
+transformation. We use version 1 for peace, violence, relational symmetry, and
+conflict transformation, and version 2 for coupling. These are corrected display names:
 the original stored identifiers and prompt hashes remain in provenance;
-no historical annotation was rerun or reassigned. The short labels in the displays
-summarize codebook categories: for example, structural justice (PN3)
-represents predominantly positive peace, and leaning mutual gain (T3)
-represents a positive-sum orientation. They are textual coding categories,
+no historical annotation was rerun or reassigned. The descriptive names in the
+displays summarize the theory components: structural justice represents
+predominantly positive peace, cooperative relations represent symbiosis,
+and leaning mutual gain represents a positive-sum orientation. These
+categories describe textual emphasis,
 not assessments of achieved peace.
 
 Each request supplies one codebook and a speech with numbered paragraphs.
@@ -145,24 +169,20 @@ valid response. The selected jobs for all analyzed paragraphs record
 The annotation configuration specifies temperature zero and seed 20260727.
 The database preserves model identifiers, request and prompt hashes, job
 completion, responses, and evidence-match flags. Schema and evidence checks
-support traceability; they do not establish the correctness of a code.
+support traceability; they do not establish the correctness of an annotation.
 
-Repeated evidence for the same paragraph, run, dimension, and code is counted
-once. A completed job without a code contributes zero; absent, failed,
+Repeated evidence for the same paragraph, run, dimension, and component is counted
+once. A completed job without that component contributes zero; absent, failed,
 or incomplete jobs remain missing. Prevalence uses only evaluable paragraphs;
-all \MainParagraphs{} RQ1 paragraphs are evaluable for the core codes in the selected
+all \MainParagraphs{} RQ1 paragraphs are evaluable for the theory components in the selected
 runs. Violence actor attribution has a conditional denominator and remains
 supplementary. The statistical analysis reads the annotation store without
 altering or rerunning its judgments.
 
-\subsection{AI Assistance}
-OpenAI Codex assisted with analysis and visualization code and manuscript
-drafting and editing. The authors retain responsibility for the work.
-
 \subsection{Human Review and Validation Design}
 Two reviewers will independently assess the focal paragraph against the
 frozen codebook, blinded to model labels. They receive optional surrounding
-paragraphs, record whether they use that context, and mark each code present,
+paragraphs, record whether they use that context, and mark each component present,
 absent, or unsure, with supporting evidence. Unreviewed or uncertain cells
 will not be converted to absence. Political identity may remain apparent
 from the text, so blinding concerns model output rather than speaker identity.
@@ -177,18 +197,19 @@ will be reported separately. Code-level human agreement and Cohen's kappa
 will describe consistency; model precision, recall, and F1 will be assessed
 against human judgments, with adjudication of disagreements before an
 agreed reference is used. Undefined metrics will remain undefined.
-Results will identify weak codes and the claims they affect rather than
+Results will identify weakly measured components and the claims they affect rather than
 rely on one pooled accuracy score. Section~\ref{sec:validation} records
 the present evidence status and how validation will affect interpretation.
 
 \subsection{Analytical Procedures}
 \subsubsection{RQ1: Prevalence and Configurations}
-Code prevalence is the share of evaluable paragraphs carrying a code.
+Component prevalence is the share of evaluable paragraphs expressing a given
+theory component.
 Ninety-five percent intervals use 500 bootstrap draws of whole speeches,
 retaining their paragraphs together. Speech-weighted prevalence and
 pairwise co-occurrence are supplementary. We enumerate all 710 combinations
-of one core code from each of three distinct blocks, rank them by positive
-paragraph count, and break ties by code string. The ten most frequent
+of one component from each of three distinct blocks, rank them by positive
+paragraph count, and break ties by a fixed category order. The ten most frequent
 combinations are descriptive, overlapping configurations; their shares
 are not a partition of the corpus. We checked one illustrative excerpt
 per rank against the scoped paragraph, all three verified evidence rows,
@@ -201,26 +222,33 @@ Primary eligibility requires at least 100 paragraphs, 15 speeches, and
 used for sensitivity analysis. The primary eligible sample comprises
 \PrimaryParagraphs{} paragraphs in \PrimarySpeeches{} speeches from \EligibleCountries{} countries across \PrimaryMeetings{} meeting records.
 Separate binary mixed models are fitted
-for codes with at least 30 positive and 30 negative observations overall.
+for components with at least 30 positive and 30 negative observations overall.
 Each model includes country, calendar month, log paragraph word count,
 and random intercepts for speech and meeting, using mean-field variational
 Bayes. Country probabilities average predictions over the same observed
 month and length distribution, with random intercepts set to zero.
 Approximate 95\% intervals use 400 fixed-effect draws.
+We retain optimizer stopping messages and gradient diagnostics. The primary
+structural-justice model stopped on numerical precision loss; two alternative initializations
+converged at the unchanged tolerance with country probabilities agreeing
+within $4\times10^{-8}$. We retain the first successful initialization;
+the data, model specification, and posterior draw seed are unchanged.
 
 Omnibus country Wald tests, Benjamini--Hochberg adjustments, and a planned
 Israel-versus-other-countries contrast are supplementary approximate outputs.
 Refits omitting length or replacing month with quarter assess specification;
 nonconverged refits are retained in diagnostics and excluded from predictions.
-The main heatmap standardizes probabilities within each code, so its colors
+The main heatmap standardizes probabilities within each component, so its colors
 show relative emphasis. A companion table reports absolute probabilities
-for one anchor per block (PN3, VS, SYM, I1, T3). Selected extrema and their
+for one illustrative component per block: structural justice, structural
+violence, cooperative relations, mostly asymmetric relations, and leaning
+mutual gain. Selected extrema and their
 gaps are descriptive and do not constitute pairwise significance tests.
 
 \subsubsection{RQ3: Profile Similarity}
-We arrange converged adjusted probabilities in a country-by-code matrix,
-standardize codes across countries, and divide each by the square root of
-the retained code count in its block. This gives the five blocks equal
+We arrange converged adjusted probabilities in a country-by-component matrix,
+standardize components across countries, and divide each by the square root of
+the retained component count in its block. This gives the five blocks equal
 aggregate weight. Missing values are not replaced with zero.
 Principal component analysis (PCA) maps continuous variation. Ward clustering
 with Euclidean distance examines two through five groups using silhouette
@@ -238,9 +266,9 @@ full model-refit bootstrap or evidence of enduring political blocs.
 % Joint author contribution.
 \subsection{RQ1: A Shared Repertoire with Different Conditions for Peace}
 Direct violence (\PrevVD{}\%) and structural violence (\PrevVS{}\%) are the most
-frequent core codes; structural justice appears in \PrevPNThree{}\% of paragraphs
-(Figure~\ref{fig:rq1-prevalence}). Because paragraphs can carry several
-codes, describing violence and articulating a peaceful settlement can
+frequent theory components; structural justice appears in \PrevPNThree{}\% of paragraphs
+(Figure~\ref{fig:rq1-prevalence}). Because paragraphs can express several
+components, describing violence and articulating a peaceful settlement can
 coexist in the same passage.
 
 The leading three-block configuration combines \LeadingDescription{}:
@@ -254,9 +282,9 @@ of speech or their political effectiveness.
 \begin{figure}[!htbp]
 \centering
 \includegraphics[width=\columnwidth]{../research_outputs/latex/paper/rq1_core_prevalence.pdf}
-\caption{Core-code prevalence among \MainParagraphs{} paragraphs. Points show percentages;
-lines at points show 95\% speech-bootstrap intervals (500 draws). Codes
-can overlap. Short labels summarize the frozen codebook categories.}
+\caption{Prevalence of theory components among \MainParagraphs{} paragraphs. Points show percentages;
+lines at points show 95\% speech-bootstrap intervals (500 draws). Components
+can overlap. Descriptive names summarize the fixed annotation categories.}
 \Description{A grouped horizontal dot chart uses five pastel colors for
 the theory blocks. Direct and structural violence have the largest shares.
 Printed percentages and a common zero-to-32 percent axis permit comparison.}
@@ -265,12 +293,12 @@ Printed percentages and a common zero-to-32 percent axis permit comparison.}
 \input{../research_outputs/latex/paper/rq1_configurations.tex}
 
 \subsection{RQ2: Differences in Relative Emphasis}
-\ModelConverged{} of the \ModelTotal{} core-code models converged for \EligibleCountries{} eligible countries.
-Codes failing support or convergence screens (\ExcludedCodes{}) are omitted
+\ModelConverged{} of the \ModelTotal{} component models converged for \EligibleCountries{} eligible countries.
+Components failing support or convergence screens (\ExcludedCodes{}) are omitted
 from adjusted comparisons; their descriptive prevalence remains in RQ1. Figure~\ref{fig:rq2-heatmap}
 shows variation across several dimensions, rather than a single ranking
 of states by peacefulness. A blue cell means above-average emphasis for
-that code; it need not indicate high absolute prevalence.
+that component; it need not indicate high absolute prevalence.
 
 Table~\ref{tab:rq2-anchor-extrema} grounds these relative colors in
 probabilities under the common prediction distribution. \VSRangeSentence{}
@@ -281,14 +309,14 @@ explanations or tested pairwise country differences.
 \begin{figure*}[!tbp]
 \centering
 \includegraphics[width=\textwidth]{../research_outputs/latex/paper/rq2_adjusted_heatmap.pdf}
-\caption{Relative emphasis across \EligibleCountries{} countries and \ProfileCodes{} converged codes.
-Adjusted probabilities are standardized within each code; peach is below
+\caption{Relative emphasis across \EligibleCountries{} countries and \ProfileCodes{} theory components with converged models.
+Adjusted probabilities are standardized within each component; peach is below
 and blue above its country mean. Countries follow PC1 order. Color represents
 standard deviations, not percentage points; values beyond $\pm2.5$ use
-the endpoint colors, indicated by the colorbar arrows. Absolute anchor
+the endpoint colors, indicated by the colorbar arrows. Absolute illustrative
 probabilities appear in Table~\ref{tab:rq2-anchor-extrema}.}
 \Description{A peach-to-blue heatmap places country rows against construct
-columns in five labeled blocks. White marks the within-code country mean.
+columns in five labeled blocks. White marks the within-component country mean.
 The diverging scale has explicit saturated ends.}
 \label{fig:rq2-heatmap}
 \end{figure*}
@@ -321,7 +349,7 @@ these assignments do not establish enduring political groups.
 shows all states; its dashed rectangle locates panel (b), which enlarges
 \ZoomCountries{} countries. Both use equal units on the two axes. Peach diamonds mark P1
 (\KTwoOneSize{} countries); blue circles mark P2 (\KTwoTwoSize{} countries), from
-Ward clustering of all \ProfileCodes{} codes. Sensitivity diagnostics for these
+Ward clustering of all \ProfileCodes{} theory components. Sensitivity diagnostics for these
 exploratory assignments appear in Table~\ref{tab:rq3-profile-checks}. The country key is
 included below the map. Proximity concerns the displayed \PCShown{}\% of
 profile variation.}
@@ -335,10 +363,10 @@ identifies both groups, and a printed key expands every abbreviation.}
 \input{../research_outputs/latex/paper/rq3_profile_checks.tex}
 \subsection{Discussion: What Peace Requires in the Observed Discourse}
 Read together, the analyses suggest a shared vocabulary with different
-conditions attached to peace. Frequent violence codes identify how speeches
+conditions attached to peace. Frequent references to forms of violence identify how speeches
 describe the conflict, while recurring justice--cooperation--mutual-gain
 configurations show how some passages connect a settlement to a political
-relationship. Their coexistence helps explain why code prevalence alone
+relationship. Their coexistence helps explain why component prevalence alone
 cannot summarize a speech's argument.
 
 A UK statement illustrates this connection: ``A negotiated two-State
@@ -346,17 +374,20 @@ solution is the best way to ensure long-term security for both Israelis
 and Palestinians'' \cite[p.~16]{UNSC9881}. The preceding sentence urges a
 return to the ceasefire deal. The passage links an immediate cessation
 of violence to a longer-term political arrangement, and the full paragraph
-is coded PN3+SYM+T3. This is an illustration of the leading configuration,
+combines structural justice, cooperative relations, and leaning mutual gain.
+This is an illustration of the leading configuration,
 not evidence that every call for two states expresses identical reasoning.
 
 Other passages attach peace to different conditions. South Africa called
 for statehood delivering ``true sovereignty on equal terms with Israel''
-\cite[p.~41]{UNSC10023R1}; the full paragraph is coded PN3+VS+T3.
+\cite[p.~41]{UNSC10023R1}; the full paragraph combines structural justice,
+structural violence, and leaning mutual gain.
 A US statement instead argues: ``There is one entity that could stop
 violence for everyone in a moment and that is Hamas''
 \cite[p.~17]{UNSC9891}. Its preceding sentence makes an end to violence
 conditional on the return of hostages and disarmament, and the paragraph
-is coded PN0+VD+T0. The contrast concerns how these particular passages
+combines a ceasefire-only conception of peace, direct violence, and zero-sum
+framing. The contrast concerns how these particular passages
 frame an end to conflict. It does not reduce either country's entire
 position to one quotation or endorse the statements' factual assertions.
 Appendix Table~\ref{tab:rq1-excerpts} provides a traceable example for each
@@ -377,13 +408,13 @@ but human judgments and adjudication have not been returned. No human
 agreement or model-accuracy result is therefore claimed. The current
 empirical findings describe LLM-coded text; confidence in their substantive
 interpretation depends on the review designed in Method. Checking a quotation
-against its source establishes textual provenance, not agreement with its code.
+against its source establishes textual provenance, not agreement with its annotation.
 
-Validation will be reported here at code level, separating the random sample
+Validation will be reported here for each theory component, separating the random sample
 from the diagnostic set and stating the number of resolved judgments.
-For weak or ambiguous codes, we will identify the affected prevalence,
+For weakly measured or ambiguous components, we will identify the affected prevalence,
 configurations, or country-profile claims and assess whether those patterns
-persist when the code is excluded or reviewed labels are used in the sampled
+persist when the component is excluded or reviewed labels are used in the sampled
 cases. Such checks assess sensitivity; the review sample does not relabel
 the full corpus. Findings that persist can retain their interpretation with
 appropriate caution. If errors change a leading pattern or country contrast,
@@ -406,12 +437,12 @@ retained for scrutiny.
 \section{Conclusion}
 The observed discourse constructs peace through overlapping accounts of
 violence, political justice, cooperation, and conflict transformation.
-The leading three-code configuration links structural justice, cooperative
+The leading three-component configuration links structural justice, cooperative
 relations, and mutual gain, while source passages show different conditions
 attached to ending conflict. Adjusted country profiles capture differences
 in emphasis; the clustering checks give limited support for discrete groups.
 These findings concern the annotated meeting subset and the stated coding
-scheme. Human validation will determine the strength of the code-level
+scheme. Human validation will determine the strength of the component-level
 interpretations and whether particular claims require revision.
 
 \FloatBarrier
@@ -420,8 +451,8 @@ interpretations and whether particular claims require revision.
 
 \appendix
 \section{Illustrative Source-Speech Excerpts}
-The ranks and codes match Table~\ref{tab:rq1-configurations}.
-Codes refer to the full paragraphs. The passages illustrate arguments
+The ranks match the theory-component configurations in Table~\ref{tab:rq1-configurations}.
+Components are identified in the full paragraphs. The passages illustrate arguments
 in their original records and provide traceable reading context.
 \input{../research_outputs/latex/paper/rq1_excerpts.tex}
 \end{document}

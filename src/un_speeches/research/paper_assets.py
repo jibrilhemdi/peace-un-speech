@@ -131,7 +131,7 @@ def _rq1(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
         position += len(rows) + .75
     ax.set_ylim(position-.45, -1)
     ax.set_xlim(0, 32); ax.set_xticks([0, 10, 20, 30])
-    ax.set_yticks([]); ax.set_xlabel("Paragraphs carrying code (%)", fontsize=7.5)
+    ax.set_yticks([]); ax.set_xlabel("Paragraphs expressing component (%)", fontsize=7.5)
     ax.text(1.15, -1, "%", transform=ax.get_yaxis_transform(), ha="right", fontsize=7)
     ax.grid(axis="x", color="#e9ebef", linewidth=.55); ax.set_axisbelow(True)
     ax.spines["left"].set_visible(False)
@@ -242,7 +242,7 @@ def _rq2(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
     for code in anchors:
         q = d[d.code.eq(code)].sort_values(["adjusted_probability_re0", "country"])
         if q.empty:
-            rows.append([_tex(SHORT[code])+f" ({code})", "Not estimable", "--", "--", "--", "--"])
+            rows.append([_tex(SHORT[code]), "Not estimable", "--", "--", "--", "--"])
             extrema.append({"code": code, "low_country": "Not estimable", "low_probability": np.nan,
                             "low_ci_low": np.nan, "low_ci_high": np.nan, "high_country": "Not estimable",
                             "high_probability": np.nan, "high_ci_low": np.nan, "high_ci_high": np.nan,
@@ -250,7 +250,7 @@ def _rq2(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
             continue
         low, high = q.iloc[0], q.iloc[-1]
         gap = 100*(high.adjusted_probability_re0-low.adjusted_probability_re0)
-        rows.append([_tex(SHORT[code])+f" ({code})", _tex(low.country),
+        rows.append([_tex(SHORT[code]), _tex(low.country),
                      f"{100*low.adjusted_probability_re0:.1f} [{100*low.ci_low:.1f}, {100*low.ci_high:.1f}]",
                      _tex(high.country),
                      f"{100*high.adjusted_probability_re0:.1f} [{100*high.ci_low:.1f}, {100*high.ci_high:.1f}]",
@@ -262,8 +262,8 @@ def _rq2(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
                         "gap_percentage_points": gap})
     t = paper / "rq2_anchor_extrema.tex"
     _table(t, "tab:rq2-anchor-extrema",
-           "Descriptive low and high adjusted probabilities for one anchor code per theory block. Failed convergence or support screens are shown as not estimable. Brackets are approximate model intervals; gaps are percentage points, not pairwise tests.",
-           "lllllr", ["Anchor", "Low country", "Low \\% [95\\%]", "High country", "High \\% [95\\%]", "Gap"], rows)
+           "Descriptive low and high adjusted probabilities for one illustrative theory component per block. Failed convergence or support screens are shown as not estimable. Brackets are approximate model intervals; gaps are percentage points, not pairwise tests.",
+           "lllllr", ["Theory component", "Low country", "Low \\% [95\\%]", "High country", "High \\% [95\\%]", "Gap"], rows)
     ep = paper / "rq2_anchor_extrema.csv"; pd.DataFrame(extrema).to_csv(ep, index=False)
     serializable_extrema = [{key: (None if isinstance(value, (float, np.floating)) and pd.isna(value) else value)
                             for key, value in row.items()} for row in extrema]
@@ -412,7 +412,7 @@ def _rq3(root: Path, paper: Path, plt) -> tuple[list[Path], dict]:
                      f"{s.mean_ari:.3f}", f"{s.minimum_cluster_mean_jaccard:.3f}"])
     t = paper / "rq3_profile_checks.tex"
     _table(t, "tab:rq3-profile-checks",
-           "Ward solutions and two distinct 400-draw checks. ARI compares partitions; minimum Jaccard is the weakest group's mean best match. Model draws condition on fitted approximations; speech resampling reclusters descriptive profiles.",
+           "Ward solutions and two distinct 400-draw checks. ARI compares partitions; minimum Jaccard is the weakest group's mean best match. Model draws use the adjusted baseline; speech resampling uses its own descriptive baseline. Neither check refits the models.",
            "rrrrrrr", ["$k$", "Silhouette", "Min. group", "Model ARI", "Model Jacc.",
                         "Speech ARI", "Speech Jacc."], rows)
     return [p1, p2, t, key], {"k2_sizes": k2.value_counts().to_dict(), "pca_explained": [xvar, yvar]}
@@ -448,7 +448,8 @@ def _paper_values(root: Path, paper: Path) -> Path:
               "PrimaryParagraphs": f"{len(primary):,}", "PrimarySpeeches": f"{primary.speech_id.nunique():,}",
               "PrimaryMeetings": str(primary.meeting_id.nunique()), "ModelConverged": str(int(converged.sum())),
               "ModelTotal": str(len(diagnostics)), "ProfileCodes": str(int(converged.sum())),
-              "ExcludedCodes": ", ".join(diagnostics.loc[~converged, "feature"].str.split("__").str[-1]),
+              "ExcludedCodes": _tex(", ".join(SHORT[code].lower() for code in
+                  diagnostics.loc[~converged, "feature"].str.split("__").str[-1])),
               "LeadingCount": f"{ranked.paragraphs:,}", "LeadingShare": f"{100*ranked.share:.2f}",
               "LeadingMeetings": str(int(ranked.meetings)), "LeadingDescription": _tex(ranked.constructs),
               "PCOne": f"{100*variance.iloc[0]:.1f}", "PCTwo": f"{100*variance.iloc[1]:.1f}",
@@ -485,12 +486,12 @@ def _paper_values(root: Path, paper: Path) -> Path:
         values[code+"High"] = f"{100*row.high_probability:.1f}" if pd.notna(row.high_probability) else "--"
         values[code+"LowCountry"] = _tex(row.low_country)
         values[code+"HighCountry"] = _tex(row.high_country)
+        label = "structural violence" if code == "VS" else "cooperative relations"
         if pd.notna(row.low_probability) and pd.notna(row.high_probability):
-            label = "Structural violence" if code == "VS" else "Cooperative relations"
-            values[code+"RangeSentence"] = (label + f" range from {100*row.low_probability:.1f}\\% for "
+            values[code+"RangeSentence"] = ("Adjusted probabilities for " + label + f" range from {100*row.low_probability:.1f}\\% for "
                 + _tex(row.low_country) + f" to {100*row.high_probability:.1f}\\% for " + _tex(row.high_country) + ".")
         else:
-            values[code+"RangeSentence"] = f"The {code} adjusted model is not estimable under the declared screens; no range is reported."
+            values[code+"RangeSentence"] = f"The adjusted model for {label} is not estimable under the declared screens; no range is reported."
     path = paper / "paper_values.tex"
     path.write_text("% Generated numerical manuscript values; do not hand-edit.\n" +
                     "\n".join("\\newcommand{\\" + key + "}{" + value + "}" for key, value in values.items()) + "\n")

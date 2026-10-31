@@ -52,6 +52,11 @@ analysis:
   min_total_negatives: 30
   posterior_draws: 400
   stability_draws: 400
+  # PN3's original start stopped on precision loss. Two independent starts
+  # converged to matching estimates at the unchanged 1e-5 gradient tolerance.
+  # Change only PN3 primary/quarter-time starts; preserve posterior draw seeds.
+  optimizer_initialization_offsets:
+    Y__positive_negative__positive_negative__PN3: {primary: 1, quarter_time: 1}
   sensitivity_features:
     - Y__positive_negative__positive_negative__PN3
     - Y__violence__violence_type__VD

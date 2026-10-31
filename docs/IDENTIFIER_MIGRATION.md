@@ -235,7 +235,12 @@ both 400-replicate light stability checks, tables, figures, database/convenience
 exports, and the LaTeX/paper assets. The previous output trees are additionally
 retained under `migration_staging/preactivation/`.
 
-There are **19 converged primary models out of 21** for the expanded population.
+The following statistics describe the initial activation, before the
+[PN3 convergence follow-up](PN3_CONVERGENCE.md). Current results restore PN3:
+20 primary models converge, all four sensitivity fits converge, and clustering
+uses 20 features. The k=2 groups remain 19/8, with silhouette 0.283.
+
+At initial activation there were **19 converged primary models out of 21** for the expanded population.
 AB fails the unchanged support screen. PN3 primary and quarter-time sensitivity
 fits are nonconverged; they remain in diagnostics and are excluded from adjusted
 profiles, predictions used in paper figures, and estimated anchor ranges. The

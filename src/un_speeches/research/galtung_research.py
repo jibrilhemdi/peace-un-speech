@@ -556,9 +556,22 @@ def fit_mixed_model(frame: pd.DataFrame, outcome: str, cfg: dict[str, Any], vari
         # Keep the declared seed and legacy feature identity stable across this naming correction.
         # statsmodels otherwise uses unseeded global NumPy initialization.
         seed_identity = feature_name(outcome, reverse=True)
-        np.random.seed(cfg["analysis"]["seed"] + sum(map(ord,seed_identity)) + sum(map(ord,variant)))
+        initialization_offset=cfg["analysis"].get("optimizer_initialization_offsets", {}).get(outcome, {}).get(variant, 0)
+        initialization_seed=cfg["analysis"]["seed"] + sum(map(ord,seed_identity)) + sum(map(ord,variant)) + initialization_offset
+        np.random.seed(initialization_seed)
+        meta.update(optimizer_initialization_seed=int(initialization_seed),
+                    optimizer_initialization_offset=int(initialization_offset))
         print(f"Fitting {outcome} ({variant}): {len(d)} paragraphs, {d.country.nunique()} countries", flush=True)
-        result=model.fit_vb(verbose=False, fit_method=rank_two_bfgs, minim_opts={"maxiter":500})
+        optimizer_options={"maxiter":500}
+        optimizer_options.update(cfg["analysis"].get("optimizer_options", {}))
+        optimizer_options.update(cfg["analysis"].get("optimizer_feature_options", {}).get(outcome, {}))
+        result=model.fit_vb(verbose=False, fit_method=rank_two_bfgs, minim_opts=optimizer_options)
+        opt=result.optim_retvals
+        meta.update(optimizer_status=int(opt.status), optimizer_message=str(opt.message),
+                    optimizer_iterations=int(opt.nit), optimizer_objective=float(opt.fun),
+                    optimizer_gradient_inf=float(np.max(np.abs(opt.jac))),
+                    optimizer_maxiter=int(optimizer_options["maxiter"]),
+                    optimizer_gtol=float(optimizer_options.get("gtol", 1e-5)))
         fe=np.asarray(result.fe_mean); sd=np.asarray(result.fe_sd); names=model.exog_names
         # Same reference time/length distribution for every country; random effects fixed to zero.
         import patsy

@@ -48,14 +48,13 @@ def generate_ranked_rq1(
 
     rows = []
     for _, row in top.iterrows():
-        label = (tex(row.constructs) + r"\newline\texttt{"
-                 + tex(row.configuration) + "}")
+        label = tex(row.constructs)
         rows.append([str(int(row["rank"])), label, f"{int(row.paragraphs):,}",
                      f"{100 * row.share:.2f}\\%", str(int(row.meetings))])
     table = paper / "rq1_configurations.tex"
     lines = ["% Generated from exhaustive scoped triplet ranking; do not hand-edit.",
              r"\begin{table*}[!tbp]", r"\centering\small",
-             rf"\caption{{Ten most frequent cross-block three-code configurations. Shares use jointly evaluable paragraphs (up to {len(data):,}); exact denominators are saved with the ranking. Configurations overlap; shares do not sum to 100\%. Meetings counts distinct meeting records.}}",
+             rf"\caption{{Ten most frequent configurations combining three theory components from different blocks. Shares use jointly evaluable paragraphs (up to {len(data):,}); exact denominators are saved with the ranking. Configurations overlap; shares do not sum to 100\%. Meetings counts distinct meeting records.}}",
              r"\label{tab:rq1-configurations}",
              r"\begin{tabularx}{\textwidth}{@{}rXrrr@{}}", r"\toprule",
              "Rank & Configuration & Paragraphs & Share & Meetings \\\\",
@@ -165,7 +164,7 @@ def generate_ranked_rq1(
                         + tex(pd.Timestamp(row.date).date()) + r"\newline \texttt{"
                         + tex(row.doc_symbol) + "}")
         appendix_rows.append([
-            str(rank) + r" \texttt{" + tex(name) + "}",
+            str(rank),
             source_label,
             r"\emph{\textquotedblleft " + tex(quote) + r"\textquotedblright}",
         ])
@@ -176,10 +175,10 @@ def generate_ranked_rq1(
     lines = ["% Generated; verified against all three code evidence rows and source PDFs.",
              r"\begin{table*}[!tbp]", r"\centering\small",
              r"\renewcommand{\arraystretch}{1.25}",
-             r"\caption{Source-speech excerpts for Table~\ref{tab:rq1-configurations} ranks 1--10, checked against the original UN records. Codes apply to the full paragraph; excerpts provide reading context.}",
+             r"\caption{Source-speech excerpts for the configurations in Table~\ref{tab:rq1-configurations}, ranks 1--10, checked against the original UN records. Theory components are identified in the full paragraph; excerpts provide reading context.}",
              r"\label{tab:rq1-excerpts}",
-             r"\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.9in}>{\raggedright\arraybackslash}p{1.62in}X@{}}", r"\toprule",
-             "Rank and codes & Country, date, UN symbol & Excerpt \\\\",
+             r"\begin{tabularx}{\textwidth}{@{}r>{\raggedright\arraybackslash}p{1.62in}X@{}}", r"\toprule",
+             "Rank & Country, date, UN symbol & Excerpt \\\\",
              r"\midrule"]
     lines += [" & ".join(row) + " \\\\" for row in appendix_rows]
     lines += [r"\bottomrule", r"\end{tabularx}", r"\end{table*}", ""]
